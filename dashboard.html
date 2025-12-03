@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - RepairPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #2563EB;
+            --blue-light: #3B82F6;
+            --blue-dark: #1E40AF;
+            --success-green: #10B981;
+            --warning-yellow: #F59E0B;
+            --error-red: #EF4444;
+            --neutral-white: #FFFFFF;
+            --neutral-light: #F8FAFC;
+            --neutral-medium: #64748B;
+            --neutral-dark: #1E293B;
+            --neutral-black: #0F172A;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: #f8fafc;
+        }
+        
+        .font-display { font-family: 'Poppins', sans-serif; }
+        .font-heading { font-family: 'Inter', sans-serif; }
+        
+        .sidebar {
+            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        
+        .sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 4px 8px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+        }
+        
+        .nav-item.active {
+            background: var(--primary-blue);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+        
+        .quick-action-btn {
+            background: linear-gradient(135deg, var(--primary-blue), var(--blue-light));
+            transition: all 0.3s ease;
+        }
+        
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+        }
+        
+        .activity-item {
+            transition: all 0.3s ease;
+        }
+        
+        .activity-item:hover {
+            background: #f8fafc;
+            transform: translateX(4px);
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.6s ease;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-online { background: #10b981; }
+        .status-busy { background: #f59e0b; }
+        .status-offline { background: #6b7280; }
+        
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, var(--primary-blue), var(--blue-light));
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200">
+        <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center space-x-4">
+                <button id="sidebarToggle" class="text-gray-600 hover:text-blue-600 lg:hidden">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">R</span>
+                    </div>
+                    <span class="font-display font-bold text-xl text-gray-900">RepairPro</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <!-- Search -->
+                <div class="relative hidden md:block">
+                    <input type="text" placeholder="Cari..." class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                
+                <!-- Notifications -->
+                <div class="relative">
+                    <button class="p-2 text-gray-600 hover:text-blue-600 relative">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="notification-badge absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                    </button>
+                </div>
+                
+                <!-- User Profile -->
+                <div class="flex items-center space-x-3">
+                    <img src="./resources/staff-avatar-1.jpg" alt="User" class="w-8 h-8 rounded-full object-cover">
+                    <div class="hidden sm:block">
+                        <p class="text-sm font-heading font-medium text-gray-900">Andi Wijaya</p>
+                        <p class="text-xs text-gray-500">Manager</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-16 bottom-0 w-64 z-30 overflow-y-auto">
+        <div class="p-4">
+            <nav class="space-y-2">
+                <a href="dashboard.html" class="nav-item active flex items-center px-4 py-3 text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">Dashboard</span>
+                </a>
+                
+                <a href="customers.html" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">Pelanggan</span>
+                </a>
+                
+                <a href="jobsheet.html" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">JobSheet</span>
+                </a>
+                
+                <a href="inventory.html" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">Inventory</span>
+                </a>
+                
+                <a href="pos.html" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h8zM6 10a2 2 0 012-2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">POS</span>
+                </a>
+                
+                <a href="staff.html" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">Staff</span>
+                </a>
+                
+                <a href="invoice.html" class="nav-item flex items-center px-4 py-3 text-gray-300 hover:text-white">
+                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="sidebar-text font-heading font-medium">Invoice</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-0 lg:ml-64 pt-16 min-h-screen">
+        <div class="p-4 sm:p-6 lg:p-8">
+            <!-- Page Header -->
+            <div class="mb-8 fade-in">
+                <h1 class="font-display font-bold text-3xl text-gray-900 mb-2">Dashboard</h1>
+                <p class="text-gray-600">Selamat datang kembali, Andi! Berikut ringkasan aktivitas bengkel Anda hari ini.</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 fade-in">
+                <button onclick="window.location.href='jobsheet.html'" class="quick-action-btn p-4 rounded-xl text-white text-center">
+                    <svg class="w-8 h-8 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="font-heading font-medium text-sm">Job Baru</span>
+                </button>
+                
+                <button onclick="window.location.href='customers.html'" class="quick-action-btn p-4 rounded-xl text-white text-center">
+                    <svg class="w-8 h-8 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M18 9v3a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V9a2 2 0 012-2h12a2 2 0 012 2z"></path>
+                    </svg>
+                    <span class="font-heading font-medium text-sm">Pelanggan</span>
+                </button>
+                
+                <button onclick="window.location.href='inventory.html'" class="quick-action-btn p-4 rounded-xl text-white text-center">
+                    <svg class="w-8 h-8 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="font-heading font-medium text-sm">Cek Stok</span>
+                </button>
+                
+                <button onclick="window.location.href='pos.html'" class="quick-action-btn p-4 rounded-xl text-white text-center">
+                    <svg class="w-8 h-8 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h8zM6 10a2 2 0 012-2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"></path>
+                    </svg>
+                    <span class="font-heading font-medium text-sm">POS</span>
+                </button>
+            </div>
+
+            <!-- Metrics Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 fade-in">
+                <div class="metric-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold text-gray-900" id="todayJobs">24</span>
+                    </div>
+                    <h3 class="font-heading font-semibold text-gray-900 mb-1">Job Hari Ini</h3>
+                    <p class="text-sm text-green-600">+12% dari kemarin</p>
+                </div>
+                
+                <div class="metric-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold text-gray-900" id="todayRevenue">Rp 15.2M</span>
+                    </div>
+                    <h3 class="font-heading font-semibold text-gray-900 mb-1">Revenue Hari Ini</h3>
+                    <p class="text-sm text-green-600">+8% dari kemarin</p>
+                </div>
+                
+                <div class="metric-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold text-gray-900" id="activeCustomers">156</span>
+                    </div>
+                    <h3 class="font-heading font-semibold text-gray-900 mb-1">Pelanggan Aktif</h3>
+                    <p class="text-sm text-green-600">+5% bulan ini</p>
+                </div>
+                
+                <div class="metric-card p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <span class="text-2xl font-bold text-gray-900" id="lowStockItems">12</span>
+                    </div>
+                    <h3 class="font-heading font-semibold text-gray-900 mb-1">Stok Rendah</h3>
+                    <p class="text-sm text-red-600">Perlu restock</p>
+                </div>
+            </div>
+
+            <!-- Charts and Analytics -->
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <!-- Sales Chart -->
+                <div class="chart-container p-6 fade-in">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-heading font-bold text-lg text-gray-900">Penjualan 7 Hari Terakhir</h3>
+                        <select class="text-sm border border-gray-300 rounded-lg px-3 py-1 focus:ring-2 focus:ring-blue-500">
+                            <option>7 Hari</option>
+                            <option>30 Hari</option>
+                            <option>90 Hari</option>
+                        </select>
+                    </div>
+                    <div id="salesChart" style="height: 300px;"></div>
+                </div>
+                
+                <!-- Job Status Chart -->
+                <div class="chart-container p-6 fade-in">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-heading font-bold text-lg text-gray-900">Status Pekerjaan</h3>
+                        <button class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua</button>
+                    </div>
+                    <div id="jobStatusChart" style="height: 300px;"></div>
+                </div>
+            </div>
+
+            <!-- Recent Activity and Quick Stats -->
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Recent Activity -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-heading font-bold text-lg text-gray-900">Aktivitas Terbaru</h3>
+                        <button class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="activity-item flex items-center p-3 rounded-lg">
+                            <img src="./resources/customer-avatar-1.jpg" alt="Customer" class="w-10 h-10 rounded-full object-cover mr-4">
+                            <div class="flex-1">
+                                <p class="font-heading font-medium text-gray-900">Budi Santoso</p>
+                                <p class="text-sm text-gray-600">iPhone 13 Pro - Screen replacement selesai</p>
+                                <p class="text-xs text-gray-500">15 menit yang lalu</p>
+                            </div>
+                            <span class="status-indicator status-online"></span>
+                        </div>
+                        
+                        <div class="activity-item flex items-center p-3 rounded-lg">
+                            <img src="./resources/staff-avatar-2.jpg" alt="Staff" class="w-10 h-10 rounded-full object-cover mr-4">
+                            <div class="flex-1">
+                                <p class="font-heading font-medium text-gray-900">Rizky Pratama</p>
+                                <p class="text-sm text-gray-600">Memulai perbaikan MacBook Pro A2338</p>
+                                <p class="text-xs text-gray-500">32 menit yang lalu</p>
+                            </div>
+                            <span class="status-indicator status-busy"></span>
+                        </div>
+                        
+                        <div class="activity-item flex items-center p-3 rounded-lg">
+                            <img src="./resources/customer-avatar-2.jpg" alt="Customer" class="w-10 h-10 rounded-full object-cover mr-4">
+                            <div class="flex-1">
+                                <p class="font-heading font-medium text-gray-900">Siti Nurhaliza</p>
+                                <p class="text-sm text-gray-600">Melakukan pembayaran untuk service laptop</p>
+                                <p class="text-xs text-gray-500">1 jam yang lalu</p>
+                            </div>
+                            <span class="status-indicator status-online"></span>
+                        </div>
+                        
+                        <div class="activity-item flex items-center p-3 rounded-lg">
+                            <img src="./resources/staff-avatar-1.jpg" alt="Staff" class="w-10 h-10 rounded-full object-cover mr-4">
+                            <div class="flex-1">
+                                <p class="font-heading font-medium text-gray-900">Andi Wijaya</p>
+                                <p class="text-sm text-gray-600">Menambahkan parts baru ke inventory</p>
+                                <p class="text-xs text-gray-500">2 jam yang lalu</p>
+                            </div>
+                            <span class="status-indicator status-online"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="space-y-6">
+                    <!-- Technician Performance -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+                        <h3 class="font-heading font-bold text-lg text-gray-900 mb-4">Performa Teknisi</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-heading font-medium text-gray-700">Rizky Pratama</span>
+                                    <span class="text-sm text-gray-500">95%</span>
+                                </div>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill" style="width: 95%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-heading font-medium text-gray-700">Budi Santoso</span>
+                                    <span class="text-sm text-gray-500">88%</span>
+                                </div>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill" style="width: 88%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-heading font-medium text-gray-700">Dewi Lestari</span>
+                                    <span class="text-sm text-gray-500">92%</span>
+                                </div>
+                                <div class="progress-bar h-2">
+                                    <div class="progress-fill" style="width: 92%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Inventory Alerts -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+                        <h3 class="font-heading font-bold text-lg text-gray-900 mb-4">Peringatan Stok</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-red-50 rounded-lg border border-red-200">
+                                <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-heading font-medium text-red-800">iPhone 13 Screen</p>
+                                    <p class="text-xs text-red-600">Stok: 2 (Min: 5)</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-heading font-medium text-yellow-800">MacBook Battery</p>
+                                    <p class="text-xs text-yellow-600">Stok: 3 (Min: 5)</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                <div class="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-heading font-medium text-orange-800">Samsung Charger</p>
+                                    <p class="text-xs text-orange-600">Stok: 4 (Min: 8)</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="window.location.href='inventory.html'" class="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                            Kelola Inventory →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Dashboard JavaScript
+        class Dashboard {
+            constructor() {
+                this.sidebarCollapsed = false;
+                this.charts = {};
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.initializeCharts();
+                this.startRealTimeUpdates();
+                this.setupScrollAnimations();
+            }
+
+            setupEventListeners() {
+                // Sidebar toggle
+                document.getElementById('sidebarToggle').addEventListener('click', () => this.toggleSidebar());
+
+                // Window resize
+                window.addEventListener('resize', () => this.handleResize());
+            }
+
+            toggleSidebar() {
+                const sidebar = document.getElementById('sidebar');
+                this.sidebarCollapsed = !this.sidebarCollapsed;
+                
+                if (this.sidebarCollapsed) {
+                    sidebar.classList.add('collapsed');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                }
+            }
+
+            handleResize() {
+                // Auto-collapse sidebar on mobile
+                if (window.innerWidth < 1024) {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+            }
+
+            initializeCharts() {
+                this.initSalesChart();
+                this.initJobStatusChart();
+            }
+
+            initSalesChart() {
+                const chartDom = document.getElementById('salesChart');
+                const myChart = echarts.init(chartDom);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross',
+                            label: {
+                                backgroundColor: '#6a7985'
+                            }
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
+                        axisLine: {
+                            lineStyle: {
+                                color: '#e2e8f0'
+                            }
+                        },
+                        axisLabel: {
+                            color: '#64748b'
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLine: {
+                            lineStyle: {
+                                color: '#e2e8f0'
+                            }
+                        },
+                        axisLabel: {
+                            color: '#64748b',
+                            formatter: 'Rp {value}M'
+                        },
+                        splitLine: {
+                            lineStyle: {
+                                color: '#f1f5f9'
+                            }
+                        }
+                    },
+                    series: [{
+                        name: 'Revenue',
+                        type: 'line',
+                        stack: 'Total',
+                        smooth: true,
+                        lineStyle: {
+                            width: 3,
+                            color: '#2563eb'
+                        },
+                        areaStyle: {
+                            color: {
+                                type: 'linear',
+                                x: 0,
+                                y: 0,
+                                x2: 0,
+                                y2: 1,
+                                colorStops: [{
+                                    offset: 0, color: 'rgba(37, 99, 235, 0.3)'
+                                }, {
+                                    offset: 1, color: 'rgba(37, 99, 235, 0.05)'
+                                }]
+                            }
+                        },
+                        data: [12.5, 13.8, 11.2, 15.6, 14.3, 16.8, 15.2],
+                        emphasis: {
+                            focus: 'series'
+                        }
+                    }]
+                };
+
+                myChart.setOption(option);
+                this.charts.sales = myChart;
+            }
+
+            initJobStatusChart() {
+                const chartDom = document.getElementById('jobStatusChart');
+                const myChart = echarts.init(chartDom);
+                
+                const option = {
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{a} <br/>{b}: {c} ({d}%)'
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        left: 'left',
+                        textStyle: {
+                            color: '#64748b'
+                        }
+                    },
+                    series: [{
+                        name: 'Status Pekerjaan',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['60%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 8,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '18',
+                                fontWeight: 'bold'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: [
+                            {value: 8, name: 'Pending', itemStyle: {color: '#f59e0b'}},
+                            {value: 12, name: 'In Progress', itemStyle: {color: '#3b82f6'}},
+                            {value: 6, name: 'Completed', itemStyle: {color: '#10b981'}},
+                            {value: 3, name: 'Delivered', itemStyle: {color: '#6b7280'}}
+                        ]
+                    }]
+                };
+
+                myChart.setOption(option);
+                this.charts.jobStatus = myChart;
+            }
+
+            startRealTimeUpdates() {
+                // Update metrics every 30 seconds
+                setInterval(() => {
+                    this.updateMetrics();
+                }, 30000);
+
+                // Update activity feed every 60 seconds
+                setInterval(() => {
+                    this.updateActivityFeed();
+                }, 60000);
+            }
+
+            updateMetrics() {
+                // Simulate real-time data updates
+                const todayJobs = document.getElementById('todayJobs');
+                const todayRevenue = document.getElementById('todayRevenue');
+                const activeCustomers = document.getElementById('activeCustomers');
+                const lowStockItems = document.getElementById('lowStockItems');
+
+                // Animate counter updates
+                anime({
+                    targets: [todayJobs, todayRevenue, activeCustomers, lowStockItems],
+                    scale: [1, 1.05, 1],
+                    duration: 600,
+                    easing: 'easeInOutQuart'
+                });
+
+                // Update chart data
+                if (this.charts.sales) {
+                    const newData = this.generateRandomSalesData();
+                    this.charts.sales.setOption({
+                        series: [{
+                            data: newData
+                        }]
+                    });
+                }
+            }
+
+            generateRandomSalesData() {
+                return Array.from({length: 7}, () => Math.floor(Math.random() * 10) + 10);
+            }
+
+            updateActivityFeed() {
+                // Add new activity items
+                const activities = [
+                    {
+                        avatar: './resources/customer-avatar-3.jpg',
+                        name: 'Ahmad Rahman',
+                        action: 'Samsung Galaxy S22 - Charging port repair selesai',
+                        time: 'Baru saja'
+                    },
+                    {
+                        avatar: './resources/staff-avatar-3.jpg',
+                        name: 'Dewi Lestari',
+                        action: 'Menambahkan invoice baru untuk service',
+                        time: '5 menit yang lalu'
+                    }
+                ];
+
+                // Implementation would add new items to activity feed
+                console.log('New activities added:', activities);
+            }
+
+            setupScrollAnimations() {
+                const observerOptions = {
+                    threshold: 0.1,
+                    rootMargin: '0px 0px -50px 0px'
+                };
+                
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                        }
+                    });
+                }, observerOptions);
+                
+                document.querySelectorAll('.fade-in').forEach(el => {
+                    observer.observe(el);
+                });
+            }
+
+            // Resize charts on window resize
+            handleResize() {
+                Object.values(this.charts).forEach(chart => {
+                    if (chart) {
+                        chart.resize();
+                    }
+                });
+            }
+        }
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new Dashboard();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.dashboard) {
+                window.dashboard.handleResize();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JobSheet Management - RepairFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .job-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .job-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .status-pending { border-left: 4px solid #f59e0b; }
+        .status-diagnosis { border-left: 4px solid #3b82f6; }
+        .status-progress { border-left: 4px solid #8b5cf6; }
+        .status-ready { border-left: 4px solid #10b981; }
+        .status-delivered { border-left: 4px solid #059669; }
+        
+        .priority-high { background: #fef2f2; color: #dc2626; }
+        .priority-medium { background: #fef3c7; color: #d97706; }
+        .priority-low { background: #f0fdf4; color: #16a34a; }
+        
+        .job-column {
+            min-height: 600px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        
+        .modal-overlay {
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tools text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">RepairFlow</span>
+                    </div>
+                    <div class="hidden md:flex space-x-6 ml-8">
+                        <a href="dashboard.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Dashboard</a>
+                        <a href="jobsheet.html" class="text-blue-600 bg-blue-50 px-3 py-2 text-sm font-medium rounded-md">JobSheet</a>
+                        <a href="customers.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Customers</a>
+                        <a href="inventory.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Inventory</a>
+                        <a href="pos.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">POS</a>
+                        <a href="staff.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Staff</a>
+                        <a href="invoice.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Invoice</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" onclick="openJobModal()">
+                        <i class="fas fa-plus mr-2"></i>Tambah Job
+                    </button>
+                    <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">JobSheet Management</h1>
+                    <p class="text-gray-600">Kelola setiap repair ticket dari mulai penerimaan hingga penyerahan</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                        <span class="text-sm text-gray-500">Total Jobs:</span>
+                        <span class="text-lg font-bold text-gray-900 ml-2" id="totalJobs">24</span>
+                    </div>
+                    <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                        <span class="text-sm text-gray-500">Selesai Hari Ini:</span>
+                        <span class="text-lg font-bold text-green-600 ml-2" id="completedToday">8</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Board -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            
+            <!-- Pending Column -->
+            <div class="job-column p-4 fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-clock text-amber-500 mr-2"></i>
+                        Menunggu
+                    </h3>
+                    <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full" id="pendingCount">6</span>
+                </div>
+                <div id="pendingJobsList" class="space-y-3">
+                    <!-- Jobs will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Diagnosis Column -->
+            <div class="job-column p-4 fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-search text-blue-500 mr-2"></i>
+                        Diagnosis
+                    </h3>
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full" id="diagnosisCount">5</span>
+                </div>
+                <div id="diagnosisJobsList" class="space-y-3">
+                    <!-- Jobs will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- In Progress Column -->
+            <div class="job-column p-4 fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-tools text-purple-500 mr-2"></i>
+                        Dalam Proses
+                    </h3>
+                    <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full" id="progressCount">7</span>
+                </div>
+                <div id="progressJobsList" class="space-y-3">
+                    <!-- Jobs will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Ready Column -->
+            <div class="job-column p-4 fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                        Siap Diambil
+                    </h3>
+                    <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full" id="readyCount">4</span>
+                </div>
+                <div id="readyJobsList" class="space-y-3">
+                    <!-- Jobs will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Delivered Column -->
+            <div class="job-column p-4 fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-handshake text-emerald-500 mr-2"></i>
+                        Selesai
+                    </h3>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full" id="deliveredCount">2</span>
+                </div>
+                <div id="deliveredJobsList" class="space-y-3">
+                    <!-- Jobs will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Modal -->
+    <div id="jobModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Tambah Job Baru</h2>
+                    <button onclick="closeJobModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form id="jobForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Customer</label>
+                            <input type="text" id="customerName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
+                            <input type="tel" id="customerPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Perangkat</label>
+                        <input type="text" id="deviceName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: iPhone 13 Pro, Samsung Galaxy S21" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Keluhan/Deskripsi Masalah</label>
+                        <textarea id="problemDescription" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Jelaskan masalah yang dialami perangkat..." required></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Teknisi</label>
+                            <select id="assignedTechnician" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">Pilih Teknisi</option>
+                                <option value="Budi Santoso">Budi Santoso</option>
+                                <option value="Andi Wijaya">Andi Wijaya</option>
+                                <option value="Siti Nurhaliza">Siti Nurhaliza</option>
+                                <option value="Rizky Pratama">Rizky Pratama</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Prioritas</label>
+                            <select id="priority" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estimasi Biaya</label>
+                            <input type="number" id="estimatedCost" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estimasi Selesai</label>
+                            <input type="date" id="estimatedCompletion" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="closeJobModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Simpan Job
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Detail Modal -->
+    <div id="jobDetailModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Detail JobSheet</h2>
+                    <button onclick="closeJobDetailModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6" id="jobDetailContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample job data
+        let jobs = [
+            {
+                id: 1,
+                customerName: "Andi Pratama",
+                customerPhone: "081234567890",
+                deviceName: "iPhone 13 Pro",
+                problemDescription: "Layar mati total, tidak bisa dinyalakan",
+                status: "pending",
+                priority: "high",
+                assignedTechnician: "Budi Santoso",
+                estimatedCost: 2500000,
+                estimatedCompletion: "2025-12-06",
+                createdDate: "2025-12-04",
+                notes: "Perlu diagnosa lebih lanjut"
+            },
+            {
+                id: 2,
+                customerName: "Siti Nurhaliza",
+                customerPhone: "082345678901",
+                deviceName: "Samsung Galaxy S21",
+                problemDescription: "Baterai cepat habis, sering mati sendiri",
+                status: "diagnosis",
+                priority: "medium",
+                assignedTechnician: "Andi Wijaya",
+                estimatedCost: 1200000,
+                estimatedCompletion: "2025-12-05",
+                createdDate: "2025-12-03",
+                notes: "Diagnosis baterai menunjukkan keausan 80%"
+            },
+            {
+                id: 3,
+                customerName: "Bambang Suryadi",
+                customerPhone: "083456789012",
+                deviceName: "MacBook Pro 2020",
+                problemDescription: "Keyboard beberapa tombol tidak berfungsi",
+                status: "progress",
+                priority: "medium",
+                assignedTechnician: "Siti Nurhaliza",
+                estimatedCost: 1800000,
+                estimatedCompletion: "2025-12-04",
+                createdDate: "2025-12-02",
+                notes: "Sedang mengganti keyboard assembly"
+            },
+            {
+                id: 4,
+                customerName: "Rizky Pratama",
+                customerPhone: "084567890123",
+                deviceName: "iPad Air 4",
+                problemDescription: "Touch screen tidak responsif di bagian atas",
+                status: "ready",
+                priority: "high",
+                assignedTechnician: "Rizky Pratama",
+                estimatedCost: 2100000,
+                estimatedCompletion: "2025-12-03",
+                createdDate: "2025-12-01",
+                notes: "Screen replacement selesai, tested OK"
+            },
+            {
+                id: 5,
+                customerName: "Dewi Lestari",
+                customerPhone: "085678901234",
+                deviceName: "Sony WH-1000XM4",
+                problemDescription: "Audio kiri tidak keluar suara",
+                status: "delivered",
+                priority: "low",
+                assignedTechnician: "Budi Santoso",
+                estimatedCost: 800000,
+                estimatedCompletion: "2025-12-02",
+                createdDate: "2025-11-30",
+                notes: "Speaker replacement completed"
+            }
+        ];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderJobs();
+            updateJobCounts();
+            initializeAnimations();
+        });
+
+        function renderJobs() {
+            const statusColumns = {
+                pending: 'pendingJobsList',
+                diagnosis: 'diagnosisJobsList', 
+                progress: 'progressJobsList',
+                ready: 'readyJobsList',
+                delivered: 'deliveredJobsList'
+            };
+
+            // Clear all columns
+            Object.values(statusColumns).forEach(columnId => {
+                document.getElementById(columnId).innerHTML = '';
+            });
+
+            // Render jobs in appropriate columns
+            jobs.forEach(job => {
+                const jobCard = createJobCard(job);
+                const targetColumn = document.getElementById(statusColumns[job.status]);
+                if (targetColumn) {
+                    targetColumn.appendChild(jobCard);
+                }
+            });
+        }
+
+        function createJobCard(job) {
+            const card = document.createElement('div');
+            card.className = `job-card bg-white p-4 rounded-lg shadow-sm border status-${job.status}`;
+            card.onclick = () => showJobDetail(job);
+
+            const priorityClass = `priority-${job.priority}`;
+            const statusText = getStatusText(job.status);
+            const statusIcon = getStatusIcon(job.status);
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <span class="status-badge ${priorityClass} text-xs px-2 py-1 rounded-full font-medium">
+                        ${job.priority.toUpperCase()}
+                    </span>
+                    <span class="text-xs text-gray-500">#${job.id}</span>
+                </div>
+                
+                <h4 class="font-semibold text-gray-900 mb-2">${job.deviceName}</h4>
+                <p class="text-sm text-gray-600 mb-3 line-clamp-2">${job.problemDescription}</p>
+                
+                <div class="space-y-2 text-xs text-gray-500">
+                    <div class="flex items-center">
+                        <i class="fas fa-user mr-2"></i>
+                        ${job.customerName}
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-tools mr-2"></i>
+                        ${job.assignedTechnician}
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-calendar mr-2"></i>
+                        ${formatDate(job.estimatedCompletion)}
+                    </div>
+                </div>
+                
+                <div class="mt-3 pt-3 border-t border-gray-100">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-500">Estimasi:</span>
+                        <span class="text-sm font-semibold text-gray-900">Rp ${formatCurrency(job.estimatedCost)}</span>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                pending: 'Menunggu',
+                diagnosis: 'Diagnosis',
+                progress: 'Dalam Proses',
+                ready: 'Siap Diambil',
+                delivered: 'Selesai'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getStatusIcon(status) {
+            const iconMap = {
+                pending: 'fas fa-clock',
+                diagnosis: 'fas fa-search',
+                progress: 'fas fa-tools',
+                ready: 'fas fa-check-circle',
+                delivered: 'fas fa-handshake'
+            };
+            return iconMap[status] || 'fas fa-circle';
+        }
+
+        function updateJobCounts() {
+            const counts = {
+                pending: jobs.filter(j => j.status === 'pending').length,
+                diagnosis: jobs.filter(j => j.status === 'diagnosis').length,
+                progress: jobs.filter(j => j.status === 'progress').length,
+                ready: jobs.filter(j => j.status === 'ready').length,
+                delivered: jobs.filter(j => j.status === 'delivered').length
+            };
+
+            document.getElementById('pendingCount').textContent = counts.pending;
+            document.getElementById('diagnosisCount').textContent = counts.diagnosis;
+            document.getElementById('progressCount').textContent = counts.progress;
+            document.getElementById('readyCount').textContent = counts.ready;
+            document.getElementById('deliveredCount').textContent = counts.delivered;
+            
+            const totalJobs = jobs.length;
+            const completedToday = jobs.filter(j => j.status === 'delivered' && j.createdDate === '2025-12-04').length;
+            
+            document.getElementById('totalJobs').textContent = totalJobs;
+            document.getElementById('completedToday').textContent = completedToday;
+        }
+
+        function openJobModal() {
+            document.getElementById('jobModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Reset form
+            document.getElementById('jobForm').reset();
+            document.getElementById('modalTitle').textContent = 'Tambah Job Baru';
+        }
+
+        function closeJobModal() {
+            document.getElementById('jobModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function showJobDetail(job) {
+            const modal = document.getElementById('jobDetailModal');
+            const content = document.getElementById('jobDetailContent');
+            
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Customer</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Nama Customer</label>
+                                <p class="text-gray-900">${job.customerName}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Nomor Telepon</label>
+                                <p class="text-gray-900">${job.customerPhone}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Perangkat</label>
+                                <p class="text-gray-900">${job.deviceName}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Deskripsi Masalah</label>
+                                <p class="text-gray-900">${job.problemDescription}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Job</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Status</label>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <span class="status-badge priority-${job.priority} text-xs px-2 py-1 rounded-full font-medium">
+                                        ${job.priority.toUpperCase()}
+                                    </span>
+                                    <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">
+                                        ${getStatusText(job.status)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Teknisi</label>
+                                <p class="text-gray-900">${job.assignedTechnician}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Estimasi Biaya</label>
+                                <p class="text-gray-900 font-semibold">Rp ${formatCurrency(job.estimatedCost)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Estimasi Selesai</label>
+                                <p class="text-gray-900">${formatDate(job.estimatedCompletion)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Catatan</label>
+                                <p class="text-gray-900">${job.notes || 'Tidak ada catatan'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex justify-end space-x-4">
+                        <button onclick="updateJobStatus(${job.id}, 'next')" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-arrow-right mr-2"></i>Update Status
+                        </button>
+                        <button onclick="editJob(${job.id})" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Edit Job
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeJobDetailModal() {
+            document.getElementById('jobDetailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function updateJobStatus(jobId, direction) {
+            const job = jobs.find(j => j.id === jobId);
+            if (!job) return;
+
+            const statusFlow = ['pending', 'diagnosis', 'progress', 'ready', 'delivered'];
+            const currentIndex = statusFlow.indexOf(job.status);
+            
+            if (direction === 'next' && currentIndex < statusFlow.length - 1) {
+                job.status = statusFlow[currentIndex + 1];
+            } else if (direction === 'prev' && currentIndex > 0) {
+                job.status = statusFlow[currentIndex - 1];
+            }
+
+            renderJobs();
+            updateJobCounts();
+            closeJobDetailModal();
+            
+            // Show success notification
+            showNotification(`Status job #${jobId} diupdate menjadi ${getStatusText(job.status)}`);
+        }
+
+        function editJob(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            if (!job) return;
+
+            // Populate form with existing data
+            document.getElementById('customerName').value = job.customerName;
+            document.getElementById('customerPhone').value = job.customerPhone;
+            document.getElementById('deviceName').value = job.deviceName;
+            document.getElementById('problemDescription').value = job.problemDescription;
+            document.getElementById('assignedTechnician').value = job.assignedTechnician;
+            document.getElementById('priority').value = job.priority;
+            document.getElementById('estimatedCost').value = job.estimatedCost;
+            document.getElementById('estimatedCompletion').value = job.estimatedCompletion;
+
+            // Store job ID for update
+            document.getElementById('jobForm').dataset.jobId = jobId;
+            document.getElementById('modalTitle').textContent = 'Edit Job';
+            
+            closeJobDetailModal();
+            openJobModal();
+        }
+
+        // Form submission
+        document.getElementById('jobForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const jobId = this.dataset.jobId;
+            const formData = new FormData(this);
+            
+            const jobData = {
+                customerName: document.getElementById('customerName').value,
+                customerPhone: document.getElementById('customerPhone').value,
+                deviceName: document.getElementById('deviceName').value,
+                problemDescription: document.getElementById('problemDescription').value,
+                assignedTechnician: document.getElementById('assignedTechnician').value,
+                priority: document.getElementById('priority').value,
+                estimatedCost: parseInt(document.getElementById('estimatedCost').value) || 0,
+                estimatedCompletion: document.getElementById('estimatedCompletion').value,
+                status: 'pending',
+                createdDate: new Date().toISOString().split('T')[0],
+                notes: 'Job baru ditambahkan'
+            };
+
+            if (jobId) {
+                // Update existing job
+                const jobIndex = jobs.findIndex(j => j.id === parseInt(jobId));
+                if (jobIndex !== -1) {
+                    jobs[jobIndex] = { ...jobs[jobIndex], ...jobData };
+                    showNotification(`Job #${jobId} berhasil diupdate`);
+                }
+            } else {
+                // Add new job
+                const newId = Math.max(...jobs.map(j => j.id)) + 1;
+                jobs.push({ id: newId, ...jobData });
+                showNotification(`Job baru #${newId} berhasil ditambahkan`);
+            }
+
+            renderJobs();
+            updateJobCounts();
+            closeJobModal();
+            
+            // Reset form
+            this.reset();
+            delete this.dataset.jobId;
+        });
+
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Animate out and remove
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('id-ID');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function initializeAnimations() {
+            // Animate elements on page load
+            anime({
+                targets: '.fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 800,
+                delay: anime.stagger(100),
+                easing: 'easeOutQuart'
+            });
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('jobModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeJobModal();
+            }
+        });
+
+        document.getElementById('jobDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeJobDetailModal();
+            }
+        });
+    </script>
+</body>
+</html>

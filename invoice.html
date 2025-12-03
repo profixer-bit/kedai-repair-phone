@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Management - RepairFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .invoice-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .invoice-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .status-paid { border-left: 4px solid #10b981; }
+        .status-unpaid { border-left: 4px solid #dc2626; }
+        .status-partial { border-left: 4px solid #f59e0b; }
+        .status-overdue { border-left: 4px solid #7c2d12; }
+        
+        .modal-overlay {
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        
+        .invoice-item {
+            display: grid;
+            grid-template-columns: 1fr 100px 100px 100px 40px;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .invoice-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-filter.active {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .payment-method {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .payment-method:hover {
+            transform: scale(1.02);
+        }
+        
+        .payment-method.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tools text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">RepairFlow</span>
+                    </div>
+                    <div class="hidden md:flex space-x-6 ml-8">
+                        <a href="dashboard.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Dashboard</a>
+                        <a href="jobsheet.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">JobSheet</a>
+                        <a href="customers.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Customers</a>
+                        <a href="inventory.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Inventory</a>
+                        <a href="pos.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">POS</a>
+                        <a href="staff.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Staff</a>
+                        <a href="invoice.html" class="text-blue-600 bg-blue-50 px-3 py-2 text-sm font-medium rounded-md">Invoice</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" onclick="openInvoiceModal()">
+                        <i class="fas fa-plus mr-2"></i>Buat Invoice
+                    </button>
+                    <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Invoice Management</h1>
+                    <p class="text-gray-600">Kelola invoice, pembayaran, dan piutang repair shop</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                        <span class="text-sm text-gray-500">Total Invoice:</span>
+                        <span class="text-lg font-bold text-gray-900 ml-2" id="totalInvoices">124</span>
+                    </div>
+                    <div class="bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                        <span class="text-sm text-red-600">Belum Dibayar:</span>
+                        <span class="text-lg font-bold text-red-600 ml-2" id="unpaidInvoices">18</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-file-invoice text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Invoice</p>
+                        <p class="text-2xl font-bold text-gray-900">124</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Lunas</p>
+                        <p class="text-2xl font-bold text-gray-900">89</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Belum Lunas</p>
+                        <p class="text-2xl font-bold text-gray-900">18</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-red-100 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Overdue</p>
+                        <p class="text-2xl font-bold text-gray-900">5</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 fade-in">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Pendapatan Bulanan</h3>
+            <div id="revenueChart" style="height: 300px;"></div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 fade-in">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div class="flex flex-wrap gap-2">
+                    <button class="status-filter active px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-status="all">
+                        Semua Invoice
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="paid">
+                        Lunas
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="unpaid">
+                        Belum Lunas
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="partial">
+                        Partial
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="overdue">
+                        Overdue
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Cari invoice..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <select id="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="date">Sortir by Tanggal</option>
+                        <option value="amount">Sortir by Jumlah</option>
+                        <option value="status">Sortir by Status</option>
+                        <option value="customer">Sortir by Customer</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="invoicesGrid">
+            <!-- Invoice cards will be populated by JavaScript -->
+        </div>
+
+        <!-- Bulk Actions -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border fade-in">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <input type="checkbox" id="selectAll" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="selectAll" class="text-sm text-gray-700">Select All</label>
+                    <span id="selectedCount" class="text-sm text-gray-500">0 selected</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="bulkPaymentReminder()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors">
+                        <i class="fas fa-bell mr-2"></i>Kirim Pengingat
+                    </button>
+                    <button onclick="bulkExport()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div id="invoiceModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Buat Invoice Baru</h2>
+                    <button onclick="closeInvoiceModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form id="invoiceForm" class="space-y-6">
+                    <!-- Customer Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                            <select id="invoiceCustomer" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">Pilih Customer</option>
+                                <option value="1">Andi Pratama</option>
+                                <option value="2">Siti Nurhaliza</option>
+                                <option value="3">Bambang Suryadi</option>
+                                <option value="4">Rizky Pratama</option>
+                                <option value="5">Dewi Lestari</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Invoice</label>
+                            <input type="date" id="invoiceDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Jatuh Tempo</label>
+                            <input type="date" id="dueDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Invoice</label>
+                            <input type="text" id="invoiceNumber" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                        </div>
+                    </div>
+                    
+                    <!-- Invoice Items -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Item Invoice</h3>
+                            <button type="button" onclick="addInvoiceItem()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Tambah Item
+                            </button>
+                        </div>
+                        
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="invoice-item font-semibold text-gray-700 bg-gray-50 px-2 rounded">
+                                <div>Deskripsi</div>
+                                <div class="text-center">Qty</div>
+                                <div class="text-center">Harga</div>
+                                <div class="text-center">Total</div>
+                                <div></div>
+                            </div>
+                            <div id="invoiceItems">
+                                <!-- Invoice items will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                            <textarea id="invoiceNotes" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Catatan untuk invoice..."></textarea>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Subtotal:</span>
+                                <span class="font-semibold text-gray-900" id="subtotal">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Pajak (11%):</span>
+                                <span class="font-semibold text-gray-900" id="tax">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Diskon:</span>
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" id="discountPercent" class="w-16 px-2 py-1 border border-gray-300 rounded text-center" placeholder="%" min="0" max="100">
+                                    <span class="font-semibold text-red-600" id="discount">- Rp 0</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-gray-300 pt-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-bold text-gray-900">Total:</span>
+                                    <span class="text-2xl font-bold text-blue-600" id="totalAmount">Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <button type="button" onclick="closeInvoiceModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Simpan Invoice
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Detail Modal -->
+    <div id="invoiceDetailModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Detail Invoice</h2>
+                    <button onclick="closeInvoiceDetailModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6" id="invoiceDetailContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Pembayaran Invoice</h2>
+                    <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sisa Tagihan</label>
+                        <div class="text-3xl font-bold text-blue-600" id="remainingAmount">Rp 0</div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah Pembayaran</label>
+                        <input type="number" id="paymentAmount" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xl text-center" placeholder="0" min="0">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
+                        <div class="space-y-3">
+                            <div class="payment-method selected border-2 border-gray-200 rounded-lg p-4" data-method="cash">
+                                <div class="flex items-center">
+                                    <i class="fas fa-money-bill text-green-600 text-xl mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Tunai</p>
+                                        <p class="text-sm text-gray-500">Pembayaran cash</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-method border-2 border-gray-200 rounded-lg p-4" data-method="transfer">
+                                <div class="flex items-center">
+                                    <i class="fas fa-university text-blue-600 text-xl mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Transfer Bank</p>
+                                        <p class="text-sm text-gray-500">Bank transfer</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="payment-method border-2 border-gray-200 rounded-lg p-4" data-method="digital">
+                                <div class="flex items-center">
+                                    <i class="fas fa-qrcode text-purple-600 text-xl mr-3"></i>
+                                    <div>
+                                        <p class="font-medium text-gray-900">Digital</p>
+                                        <p class="text-sm text-gray-500">QRIS, E-wallet</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4">
+                        <button onclick="closePaymentModal()" class="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button onclick="processPayment()" class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-check mr-2"></i>Proses Pembayaran
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample invoices data
+        let invoices = [
+            {
+                id: 1,
+                invoiceNumber: "INV-2025-001",
+                customerId: 1,
+                customerName: "Andi Pratama",
+                customerEmail: "andi.pratama@email.com",
+                customerPhone: "081234567890",
+                issueDate: "2025-12-01",
+                dueDate: "2025-12-15",
+                items: [
+                    { description: "iPhone 13 Pro Screen Replacement", quantity: 1, price: 2200000 },
+                    { description: "Battery Replacement Service", quantity: 1, price: 450000 }
+                ],
+                subtotal: 2650000,
+                tax: 291500,
+                discount: 0,
+                total: 2941500,
+                paidAmount: 2941500,
+                status: "paid",
+                paymentMethod: "cash",
+                notes: "Service completed successfully",
+                createdAt: "2025-12-01 10:30:00"
+            },
+            {
+                id: 2,
+                invoiceNumber: "INV-2025-002",
+                customerId: 2,
+                customerName: "Siti Nurhaliza",
+                customerEmail: "siti.nurhaliza@email.com",
+                customerPhone: "082345678901",
+                issueDate: "2025-12-02",
+                dueDate: "2025-12-16",
+                items: [
+                    { description: "Samsung Galaxy S21 Battery", quantity: 1, price: 350000 },
+                    { description: "Screen Protector Installation", quantity: 2, price: 50000 }
+                ],
+                subtotal: 450000,
+                tax: 49500,
+                discount: 0,
+                total: 499500,
+                paidAmount: 200000,
+                status: "partial",
+                paymentMethod: "transfer",
+                notes: "Partial payment received",
+                createdAt: "2025-12-02 14:15:00"
+            },
+            {
+                id: 3,
+                invoiceNumber: "INV-2025-003",
+                customerId: 3,
+                customerName: "Bambang Suryadi",
+                customerEmail: "bambang.suryadi@email.com",
+                customerPhone: "083456789012",
+                issueDate: "2025-12-03",
+                dueDate: "2025-12-10",
+                items: [
+                    { description: "MacBook Pro Logic Board Repair", quantity: 1, price: 8500000 }
+                ],
+                subtotal: 8500000,
+                tax: 935000,
+                discount: 500000,
+                total: 8935000,
+                paidAmount: 0,
+                status: "unpaid",
+                paymentMethod: "",
+                notes: "High priority repair",
+                createdAt: "2025-12-03 09:45:00"
+            },
+            {
+                id: 4,
+                invoiceNumber: "INV-2025-004",
+                customerId: 4,
+                customerName: "Rizky Pratama",
+                customerEmail: "rizky.pratama@email.com",
+                customerPhone: "084567890123",
+                issueDate: "2025-11-20",
+                dueDate: "2025-12-05",
+                items: [
+                    { description: "iPad Air 4 Screen Replacement", quantity: 1, price: 2100000 },
+                    { description: "Charging Port Repair", quantity: 1, price: 300000 }
+                ],
+                subtotal: 2400000,
+                tax: 264000,
+                discount: 0,
+                total: 2664000,
+                paidAmount: 0,
+                status: "overdue",
+                paymentMethod: "",
+                notes: "Overdue payment",
+                createdAt: "2025-11-20 16:20:00"
+            },
+            {
+                id: 5,
+                invoiceNumber: "INV-2025-005",
+                customerId: 5,
+                customerName: "Dewi Lestari",
+                customerEmail: "dewi.lestari@email.com",
+                customerPhone: "085678901234",
+                issueDate: "2025-12-04",
+                dueDate: "2025-12-18",
+                items: [
+                    { description: "Sony WH-1000XM4 Speaker Replacement", quantity: 1, price: 800000 }
+                ],
+                subtotal: 800000,
+                tax: 88000,
+                discount: 0,
+                total: 888000,
+                paidAmount: 888000,
+                status: "paid",
+                paymentMethod: "digital",
+                notes: "Payment via QRIS",
+                createdAt: "2025-12-04 11:30:00"
+            }
+        ];
+
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let sortBy = 'date';
+        let selectedInvoices = [];
+        let currentPaymentInvoice = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderInvoices();
+            initializeChart();
+            setupEventListeners();
+            initializeAnimations();
+            generateInvoiceNumber();
+        });
+
+        function setupEventListeners() {
+            // Status filters
+            document.querySelectorAll('.status-filter').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.status-filter').forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.classList.add('bg-gray-100', 'text-gray-700');
+                    });
+                    
+                    this.classList.add('active');
+                    this.classList.remove('bg-gray-100', 'text-gray-700');
+                    
+                    currentFilter = this.dataset.status;
+                    renderInvoices();
+                });
+            });
+
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', function() {
+                searchQuery = this.value.toLowerCase();
+                renderInvoices();
+            });
+
+            // Sort dropdown
+            document.getElementById('sortBy').addEventListener('change', function() {
+                sortBy = this.value;
+                renderInvoices();
+            });
+
+            // Select all checkbox
+            document.getElementById('selectAll').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.invoice-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                    if (this.checked) {
+                        if (!selectedInvoices.includes(parseInt(checkbox.value))) {
+                            selectedInvoices.push(parseInt(checkbox.value));
+                        }
+                    } else {
+                        selectedInvoices = selectedInvoices.filter(id => id !== parseInt(checkbox.value));
+                    }
+                });
+                updateSelectedCount();
+            });
+
+            // Payment method selection
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.addEventListener('click', function() {
+                    document.querySelectorAll('.payment-method').forEach(m => {
+                        m.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                });
+            });
+
+            // Discount input
+            document.getElementById('discountPercent').addEventListener('input', calculateTotals);
+        }
+
+        function renderInvoices() {
+            const grid = document.getElementById('invoicesGrid');
+            grid.innerHTML = '';
+
+            let filteredInvoices = invoices.filter(invoice => {
+                // Status filter
+                if (currentFilter !== 'all' && invoice.status !== currentFilter) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchQuery && !invoice.invoiceNumber.toLowerCase().includes(searchQuery) && 
+                    !invoice.customerName.toLowerCase().includes(searchQuery) &&
+                    !invoice.customerEmail.toLowerCase().includes(searchQuery)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Sort invoices
+            filteredInvoices.sort((a, b) => {
+                switch (sortBy) {
+                    case 'date':
+                        return new Date(b.issueDate) - new Date(a.issueDate);
+                    case 'amount':
+                        return b.total - a.total;
+                    case 'status':
+                        return a.status.localeCompare(b.status);
+                    case 'customer':
+                        return a.customerName.localeCompare(b.customerName);
+                    default:
+                        return 0;
+                }
+            });
+
+            filteredInvoices.forEach((invoice, index) => {
+                const card = createInvoiceCard(invoice);
+                card.style.animationDelay = `${index * 100}ms`;
+                grid.appendChild(card);
+            });
+
+            updateStats();
+        }
+
+        function createInvoiceCard(invoice) {
+            const card = document.createElement('div');
+            card.className = 'invoice-card bg-white p-6 rounded-xl shadow-sm border fade-in';
+            card.onclick = () => showInvoiceDetail(invoice);
+
+            const statusClass = `status-${invoice.status}`;
+            const statusText = {
+                'paid': 'Lunas',
+                'unpaid': 'Belum Dibayar',
+                'partial': 'Partial',
+                'overdue': 'Overdue'
+            };
+
+            const statusColors = {
+                'paid': 'bg-green-100 text-green-800',
+                'unpaid': 'bg-red-100 text-red-800',
+                'partial': 'bg-yellow-100 text-yellow-800',
+                'overdue': 'bg-orange-100 text-orange-800'
+            };
+
+            const remainingAmount = invoice.total - invoice.paidAmount;
+            const progressPercent = (invoice.paidAmount / invoice.total) * 100;
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" class="invoice-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" value="${invoice.id}" onclick="event.stopPropagation(); toggleSelection(${invoice.id})">
+                        <div>
+                            <h3 class="font-semibold text-gray-900">${invoice.invoiceNumber}</h3>
+                            <p class="text-sm text-gray-600">${invoice.customerName}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full ${statusColors[invoice.status]} capitalize">
+                        ${statusText[invoice.status]}
+                    </span>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Tanggal:</span>
+                        <span class="text-sm text-gray-900">${formatDate(invoice.issueDate)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Jatuh Tempo:</span>
+                        <span class="text-sm text-gray-900">${formatDate(invoice.dueDate)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Total Tagihan:</span>
+                        <span class="text-sm font-semibold text-gray-900">Rp ${formatCurrency(invoice.total)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Terbayar:</span>
+                        <span class="text-sm font-semibold text-green-600">Rp ${formatCurrency(invoice.paidAmount)}</span>
+                    </div>
+                </div>
+                
+                ${invoice.status !== 'paid' ? `
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-gray-500">Sisa Tagihan:</span>
+                            <span class="text-sm font-semibold text-red-600">Rp ${formatCurrency(remainingAmount)}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: ${progressPercent}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${Math.round(progressPercent)}% terbayar</p>
+                    </div>
+                ` : ''}
+                
+                <div class="mt-4 flex space-x-2">
+                    ${invoice.status !== 'paid' ? `
+                        <button onclick="event.stopPropagation(); openPaymentModal(${invoice.id})" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors">
+                            <i class="fas fa-credit-card mr-1"></i>Bayar
+                        </button>
+                    ` : ''}
+                    <button onclick="event.stopPropagation(); sendInvoice('${invoice.id}')" class="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-paper-plane mr-1"></i>Kirim
+                    </button>
+                    <button onclick="event.stopPropagation(); downloadInvoice('${invoice.id}')" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-download mr-1"></i>Download
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function updateStats() {
+            const totalInvoices = invoices.length;
+            const paidInvoices = invoices.filter(i => i.status === 'paid').length;
+            const unpaidInvoices = invoices.filter(i => i.status === 'unpaid').length;
+            const overdueInvoices = invoices.filter(i => i.status === 'overdue').length;
+
+            document.getElementById('totalInvoices').textContent = totalInvoices;
+            document.getElementById('unpaidInvoices').textContent = unpaidInvoices;
+            
+            // Update stats cards
+            const statsCards = document.querySelectorAll('.fade-in');
+            statsCards[0].querySelector('.text-2xl').textContent = totalInvoices;
+            statsCards[1].querySelector('.text-2xl').textContent = paidInvoices;
+            statsCards[2].querySelector('.text-2xl').textContent = unpaidInvoices;
+            statsCards[3].querySelector('.text-2xl').textContent = overdueInvoices;
+        }
+
+        function initializeChart() {
+            const chart = echarts.init(document.getElementById('revenueChart'));
+            
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const revenueData = [45, 52, 48, 61, 55, 67, 72, 58, 63, 69, 75, 82];
+            const outstandingData = [12, 15, 18, 22, 25, 28, 32, 35, 38, 42, 45, 48];
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['Pendapatan', 'Piutang']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: months
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                        formatter: 'Rp {value}M'
+                    }
+                },
+                series: [
+                    {
+                        name: 'Pendapatan',
+                        type: 'bar',
+                        data: revenueData,
+                        itemStyle: {
+                            color: '#10b981'
+                        }
+                    },
+                    {
+                        name: 'Piutang',
+                        type: 'line',
+                        data: outstandingData,
+                        itemStyle: {
+                            color: '#f59e0b'
+                        },
+                        smooth: true
+                    }
+                ]
+            };
+
+            chart.setOption(option);
+            
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+
+        function openInvoiceModal() {
+            document.getElementById('invoiceModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 14);
+            
+            document.getElementById('invoiceDate').value = today;
+            document.getElementById('dueDate').value = dueDate.toISOString().split('T')[0];
+            
+            // Clear form
+            document.getElementById('invoiceForm').reset();
+            document.getElementById('modalTitle').textContent = 'Buat Invoice Baru';
+            
+            // Add first item
+            addInvoiceItem();
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            
+            // Clear form
+            document.getElementById('invoiceForm').reset();
+            document.getElementById('invoiceItems').innerHTML = '';
+            delete document.getElementById('invoiceForm').dataset.invoiceId;
+        }
+
+        function generateInvoiceNumber() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const count = invoices.length + 1;
+            const invoiceNumber = `INV-${year}-${String(count).padStart(3, '0')}`;
+            document.getElementById('invoiceNumber').value = invoiceNumber;
+            return invoiceNumber;
+        }
+
+        function addInvoiceItem() {
+            const itemsContainer = document.getElementById('invoiceItems');
+            const itemId = Date.now();
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'invoice-item';
+            itemDiv.innerHTML = `
+                <input type="text" class="col-span-5 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Deskripsi item" required>
+                <input type="number" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center" placeholder="1" min="1" value="1" required>
+                <input type="number" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center" placeholder="0" min="0" required>
+                <input type="number" class="col-span-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-center" readonly>
+                <button onclick="removeInvoiceItem(this)" class="col-span-1 bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 transition-colors">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            
+            itemsContainer.appendChild(itemDiv);
+            
+            // Add event listeners to new inputs
+            const inputs = itemDiv.querySelectorAll('input');
+            inputs.forEach(input => {
+                if (input.type !== 'text' && !input.readOnly) {
+                    input.addEventListener('input', calculateTotals);
+                }
+            });
+        }
+
+        function removeInvoiceItem(button) {
+            button.closest('.invoice-item').remove();
+            calculateTotals();
+        }
+
+        function calculateTotals() {
+            const items = document.querySelectorAll('#invoiceItems .invoice-item');
+            let subtotal = 0;
+            
+            items.forEach(item => {
+                const inputs = item.querySelectorAll('input');
+                const description = inputs[0].value;
+                const quantity = parseFloat(inputs[1].value) || 0;
+                const price = parseFloat(inputs[2].value) || 0;
+                const total = quantity * price;
+                
+                inputs[3].value = total;
+                subtotal += total;
+            });
+            
+            const tax = subtotal * 0.11; // 11% tax
+            const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+            const discount = subtotal * (discountPercent / 100);
+            const total = subtotal + tax - discount;
+            
+            document.getElementById('subtotal').textContent = `Rp ${formatCurrency(subtotal)}`;
+            document.getElementById('tax').textContent = `Rp ${formatCurrency(tax)}`;
+            document.getElementById('discount').textContent = `- Rp ${formatCurrency(discount)}`;
+            document.getElementById('totalAmount').textContent = `Rp ${formatCurrency(total)}`;
+        }
+
+        function showInvoiceDetail(invoice) {
+            const modal = document.getElementById('invoiceDetailModal');
+            const content = document.getElementById('invoiceDetailContent');
+            
+            const statusText = {
+                'paid': 'Lunas',
+                'unpaid': 'Belum Dibayar',
+                'partial': 'Partial',
+                'overdue': 'Overdue'
+            };
+
+            const statusColors = {
+                'paid': 'bg-green-100 text-green-800',
+                'unpaid': 'bg-red-100 text-red-800',
+                'partial': 'bg-yellow-100 text-yellow-800',
+                'overdue': 'bg-orange-100 text-orange-800'
+            };
+
+            const remainingAmount = invoice.total - invoice.paidAmount;
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Invoice</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Nomor Invoice</label>
+                                <p class="text-gray-900">${invoice.invoiceNumber}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Customer</label>
+                                <p class="text-gray-900">${invoice.customerName}</p>
+                                <p class="text-sm text-gray-600">${invoice.customerEmail}</p>
+                                <p class="text-sm text-gray-600">${invoice.customerPhone}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Tanggal Invoice</label>
+                                <p class="text-gray-900">${formatDate(invoice.issueDate)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Jatuh Tempo</label>
+                                <p class="text-gray-900">${formatDate(invoice.dueDate)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Pembayaran</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Status</label>
+                                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium ${statusColors[invoice.status]} capitalize">
+                                    ${statusText[invoice.status]}
+                                </span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Total Tagihan</label>
+                                <p class="text-2xl font-bold text-gray-900">Rp ${formatCurrency(invoice.total)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Terbayar</label>
+                                <p class="text-lg font-semibold text-green-600">Rp ${formatCurrency(invoice.paidAmount)}</p>
+                            </div>
+                            ${invoice.status !== 'paid' ? `
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Sisa Tagihan</label>
+                                    <p class="text-lg font-semibold text-red-600">Rp ${formatCurrency(remainingAmount)}</p>
+                                </div>
+                            ` : ''}
+                            ${invoice.paymentMethod ? `
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Metode Pembayaran</label>
+                                    <p class="text-gray-900 capitalize">${invoice.paymentMethod}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Detail Item</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-2 text-sm font-medium text-gray-700">Deskripsi</th>
+                                    <th class="text-center py-2 text-sm font-medium text-gray-700">Qty</th>
+                                    <th class="text-right py-2 text-sm font-medium text-gray-700">Harga</th>
+                                    <th class="text-right py-2 text-sm font-medium text-gray-700">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${invoice.items.map(item => `
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-2 text-sm text-gray-900">${item.description}</td>
+                                        <td class="py-2 text-center text-sm text-gray-900">${item.quantity}</td>
+                                        <td class="py-2 text-right text-sm text-gray-900">Rp ${formatCurrency(item.price)}</td>
+                                        <td class="py-2 text-right text-sm text-gray-900">Rp ${formatCurrency(item.quantity * item.price)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <div class="grid grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-2">Catatan</h4>
+                                <p class="text-gray-700">${invoice.notes || 'Tidak ada catatan'}</p>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Subtotal:</span>
+                                    <span class="font-semibold text-gray-900">Rp ${formatCurrency(invoice.subtotal)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Pajak (11%):</span>
+                                    <span class="font-semibold text-gray-900">Rp ${formatCurrency(invoice.tax)}</span>
+                                </div>
+                                ${invoice.discount > 0 ? `
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Diskon:</span>
+                                        <span class="font-semibold text-red-600">- Rp ${formatCurrency(invoice.discount)}</span>
+                                    </div>
+                                ` : ''}
+                                <div class="flex justify-between border-t border-gray-300 pt-2">
+                                    <span class="text-lg font-bold text-gray-900">Total:</span>
+                                    <span class="text-lg font-bold text-blue-600">Rp ${formatCurrency(invoice.total)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex justify-end space-x-4">
+                        ${invoice.status !== 'paid' ? `
+                            <button onclick="openPaymentModal(${invoice.id})" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                <i class="fas fa-credit-card mr-2"></i>Proses Pembayaran
+                            </button>
+                        ` : ''}
+                        <button onclick="sendInvoice('${invoice.id}')" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-paper-plane mr-2"></i>Kirim Invoice
+                        </button>
+                        <button onclick="downloadInvoice('${invoice.id}')" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Download PDF
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeInvoiceDetailModal() {
+            document.getElementById('invoiceDetailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function openPaymentModal(invoiceId) {
+            const invoice = invoices.find(i => i.id === invoiceId);
+            if (!invoice) return;
+
+            currentPaymentInvoice = invoice;
+            const remainingAmount = invoice.total - invoice.paidAmount;
+            
+            document.getElementById('remainingAmount').textContent = `Rp ${formatCurrency(remainingAmount)}`;
+            document.getElementById('paymentAmount').value = remainingAmount;
+            
+            document.getElementById('paymentModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('paymentAmount').value = '';
+            currentPaymentInvoice = null;
+        }
+
+        function processPayment() {
+            if (!currentPaymentInvoice) return;
+
+            const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+            const remainingAmount = currentPaymentInvoice.total - currentPaymentInvoice.paidAmount;
+            
+            if (paymentAmount <= 0) {
+                showNotification('Jumlah pembayaran tidak valid!', 'error');
+                return;
+            }
+
+            if (paymentAmount > remainingAmount) {
+                showNotification('Jumlah pembayaran melebihi sisa tagihan!', 'error');
+                return;
+            }
+
+            // Update invoice
+            currentPaymentInvoice.paidAmount += paymentAmount;
+            
+            if (currentPaymentInvoice.paidAmount >= currentPaymentInvoice.total) {
+                currentPaymentInvoice.status = 'paid';
+                currentPaymentInvoice.paymentMethod = document.querySelector('.payment-method.selected').dataset.method;
+            } else if (currentPaymentInvoice.paidAmount > 0) {
+                currentPaymentInvoice.status = 'partial';
+                currentPaymentInvoice.paymentMethod = document.querySelector('.payment-method.selected').dataset.method;
+            }
+
+            renderInvoices();
+            closePaymentModal();
+            showNotification(`Pembayaran Rp ${formatCurrency(paymentAmount)} berhasil diproses`);
+        }
+
+        function toggleSelection(invoiceId) {
+            const index = selectedInvoices.indexOf(invoiceId);
+            if (index > -1) {
+                selectedInvoices.splice(index, 1);
+            } else {
+                selectedInvoices.push(invoiceId);
+            }
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = `${selectedInvoices.length} selected`;
+        }
+
+        function bulkPaymentReminder() {
+            if (selectedInvoices.length === 0) {
+                showNotification('Pilih invoice terlebih dahulu!', 'error');
+                return;
+            }
+
+            showNotification(`Pengingat pembayaran dikirim untuk ${selectedInvoices.length} invoice`);
+            selectedInvoices = [];
+            document.querySelectorAll('.invoice-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateSelectedCount();
+        }
+
+        function bulkExport() {
+            if (selectedInvoices.length === 0) {
+                showNotification('Pilih invoice terlebih dahulu!', 'error');
+                return;
+            }
+
+            showNotification(`Export data untuk ${selectedInvoices.length} invoice`);
+        }
+
+        function sendInvoice(invoiceId) {
+            showNotification(`Invoice dikirim ke customer`);
+        }
+
+        function downloadInvoice(invoiceId) {
+            showNotification(`Download invoice dimulai`);
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('id-ID');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function initializeAnimations() {
+            anime({
+                targets: '.fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 800,
+                delay: anime.stagger(100),
+                easing: 'easeOutQuart'
+            });
+
+            anime({
+                targets: '.slide-in-left',
+                opacity: [0, 1],
+                translateX: [-30, 0],
+                duration: 800,
+                delay: 200,
+                easing: 'easeOutQuart'
+            });
+
+            anime({
+                targets: '.slide-in-right',
+                opacity: [0, 1],
+                translateX: [30, 0],
+                duration: 800,
+                delay: 300,
+                easing: 'easeOutQuart'
+            });
+        }
+
+        // Form submission
+        document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const invoiceId = this.dataset.invoiceId;
+            const items = [];
+            const itemRows = document.querySelectorAll('#invoiceItems .invoice-item');
+            
+            itemRows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value.trim()) {
+                    items.push({
+                        description: inputs[0].value,
+                        quantity: parseFloat(inputs[1].value) || 0,
+                        price: parseFloat(inputs[2].value) || 0
+                    });
+                }
+            });
+            
+            if (items.length === 0) {
+                showNotification('Tambahkan minimal 1 item!', 'error');
+                return;
+            }
+            
+            const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const tax = subtotal * 0.11;
+            const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+            const discount = subtotal * (discountPercent / 100);
+            const total = subtotal + tax - discount;
+            
+            const invoiceData = {
+                invoiceNumber: document.getElementById('invoiceNumber').value,
+                customerId: parseInt(document.getElementById('invoiceCustomer').value),
+                customerName: document.getElementById('invoiceCustomer').selectedOptions[0].text,
+                customerEmail: 'customer@email.com', // This would come from customer data
+                customerPhone: '081234567890', // This would come from customer data
+                issueDate: document.getElementById('invoiceDate').value,
+                dueDate: document.getElementById('dueDate').value,
+                items: items,
+                subtotal: subtotal,
+                tax: tax,
+                discount: discount,
+                total: total,
+                paidAmount: 0,
+                status: 'unpaid',
+                paymentMethod: '',
+                notes: document.getElementById('invoiceNotes').value,
+                createdAt: new Date().toISOString()
+            };
+
+            if (invoiceId) {
+                // Update existing invoice
+                const invoiceIndex = invoices.findIndex(i => i.id === parseInt(invoiceId));
+                if (invoiceIndex !== -1) {
+                    invoices[invoiceIndex] = { ...invoices[invoiceIndex], ...invoiceData };
+                    showNotification(`Invoice #${invoiceId} berhasil diupdate`);
+                }
+            } else {
+                // Add new invoice
+                const newId = Math.max(...invoices.map(i => i.id)) + 1;
+                invoices.push({ id: newId, ...invoiceData });
+                showNotification(`Invoice baru #${newId} berhasil dibuat`);
+            }
+
+            renderInvoices();
+            initializeChart();
+            closeInvoiceModal();
+            
+            // Reset form
+            this.reset();
+            delete this.dataset.invoiceId;
+        });
+
+        // Close modals when clicking outside
+        document.getElementById('invoiceModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeInvoiceModal();
+            }
+        });
+
+        document.getElementById('invoiceDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeInvoiceDetailModal();
+            }
+        });
+
+        document.getElementById('paymentModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePaymentModal();
+            }
+        });
+    </script>
+</body>
+</html>

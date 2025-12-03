@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Management - RepairFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .customer-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .customer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .status-regular { background: #dbeafe; color: #1e40af; }
+        .status-vip { background: #fef3c7; color: #d97706; }
+        .status-new { background: #dcfce7; color: #166534; }
+        
+        .modal-overlay {
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        
+        .communication-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .communication-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tools text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">RepairFlow</span>
+                    </div>
+                    <div class="hidden md:flex space-x-6 ml-8">
+                        <a href="dashboard.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Dashboard</a>
+                        <a href="jobsheet.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">JobSheet</a>
+                        <a href="customers.html" class="text-blue-600 bg-blue-50 px-3 py-2 text-sm font-medium rounded-md">Customers</a>
+                        <a href="inventory.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Inventory</a>
+                        <a href="pos.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">POS</a>
+                        <a href="staff.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Staff</a>
+                        <a href="invoice.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Invoice</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" onclick="openCustomerModal()">
+                        <i class="fas fa-plus mr-2"></i>Tambah Customer
+                    </button>
+                    <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Customer Management</h1>
+                    <p class="text-gray-600">Kelola data pelanggan dan riwayat service repair shop</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                        <span class="text-sm text-gray-500">Total Customers:</span>
+                        <span class="text-lg font-bold text-gray-900 ml-2" id="totalCustomers">156</span>
+                    </div>
+                    <div class="bg-yellow-50 px-4 py-2 rounded-lg border border-yellow-200">
+                        <span class="text-sm text-yellow-600">VIP Customers:</span>
+                        <span class="text-lg font-bold text-yellow-600 ml-2" id="vipCustomers">23</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Customers</p>
+                        <p class="text-2xl font-bold text-gray-900">156</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-crown text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">VIP Customers</p>
+                        <p class="text-2xl font-bold text-gray-900">23</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-user-plus text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">New This Month</p>
+                        <p class="text-2xl font-bold text-gray-900">18</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Avg Service</p>
+                        <p class="text-2xl font-bold text-gray-900">2.3</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 fade-in">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div class="flex flex-wrap gap-2">
+                    <button class="status-filter active px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-status="all">
+                        Semua Customer
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="regular">
+                        Regular
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="vip">
+                        VIP
+                    </button>
+                    <button class="status-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-status="new">
+                        New Customer
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Cari customer..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <select id="sortBy" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="name">Sortir by Nama</option>
+                        <option value="date">Sortir by Tanggal</option>
+                        <option value="visits">Sortir by Kunjungan</option>
+                        <option value="status">Sortir by Status</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8" id="customersGrid">
+            <!-- Customer cards will be populated by JavaScript -->
+        </div>
+
+        <!-- Customer Statistics Chart -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Statistik Customer</h3>
+            <div id="customerChart" style="height: 300px;"></div>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div id="customerModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Tambah Customer Baru</h2>
+                    <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form id="customerForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                            <input type="text" id="customerName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" id="customerEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
+                            <input type="tel" id="customerPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status Customer</label>
+                            <select id="customerStatus" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="new">New Customer</option>
+                                <option value="regular">Regular</option>
+                                <option value="vip">VIP</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Alamat</label>
+                        <textarea id="customerAddress" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Lahir</label>
+                            <input type="date" id="customerBirthDate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Kelamin</label>
+                            <select id="customerGender" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Pilih Jenis Kelamin</option>
+                                <option value="male">Laki-laki</option>
+                                <option value="female">Perempuan</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                        <textarea id="customerNotes" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Catatan tambahan tentang customer..."></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="closeCustomerModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Simpan Customer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Detail Modal -->
+    <div id="customerDetailModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Detail Customer</h2>
+                    <button onclick="closeCustomerDetailModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6" id="customerDetailContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample customers data
+        let customers = [
+            {
+                id: 1,
+                name: "Andi Pratama",
+                email: "andi.pratama@email.com",
+                phone: "081234567890",
+                address: "Jl. Merdeka No. 123, Jakarta Selatan",
+                status: "regular",
+                birthDate: "1990-05-15",
+                gender: "male",
+                notes: "Customer setia, sering service iPhone",
+                joinDate: "2023-01-15",
+                totalVisits: 8,
+                totalSpent: 8500000,
+                lastVisit: "2025-11-20",
+                preferredServices: ["iPhone Screen Repair", "Battery Replacement"]
+            },
+            {
+                id: 2,
+                name: "Siti Nurhaliza",
+                email: "siti.nurhaliza@email.com",
+                phone: "082345678901",
+                address: "Jl. Sudirman No. 45, Jakarta Pusat",
+                status: "vip",
+                birthDate: "1985-08-22",
+                gender: "female",
+                notes: "VIP customer, expect fast service",
+                joinDate: "2022-08-10",
+                totalVisits: 15,
+                totalSpent: 15200000,
+                lastVisit: "2025-11-25",
+                preferredServices: ["Samsung Galaxy Repair", "Data Recovery"]
+            },
+            {
+                id: 3,
+                name: "Bambang Suryadi",
+                email: "bambang.suryadi@email.com",
+                phone: "083456789012",
+                address: "Jl. Thamrin No. 78, Jakarta Barat",
+                status: "new",
+                birthDate: "1992-12-03",
+                gender: "male",
+                notes: "New customer, first visit for laptop repair",
+                joinDate: "2025-11-28",
+                totalVisits: 1,
+                totalSpent: 1200000,
+                lastVisit: "2025-11-28",
+                preferredServices: ["Laptop Repair"]
+            },
+            {
+                id: 4,
+                name: "Rizky Pratama",
+                email: "rizky.pratama@email.com",
+                phone: "084567890123",
+                address: "Jl. Gatot Subroto No. 90, Jakarta Timur",
+                status: "regular",
+                birthDate: "1988-03-18",
+                gender: "male",
+                notes: "Sering bawa gadget keluarga untuk service",
+                joinDate: "2023-04-22",
+                totalVisits: 6,
+                totalSpent: 6200000,
+                lastVisit: "2025-11-15",
+                preferredServices: ["iPad Repair", "iPhone Battery"]
+            },
+            {
+                id: 5,
+                name: "Dewi Lestari",
+                email: "dewi.lestari@email.com",
+                phone: "085678901234",
+                address: "Jl. Rasuna Said No. 56, Jakarta Selatan",
+                status: "vip",
+                birthDate: "1991-07-30",
+                gender: "female",
+                notes: "Business owner, butuh service cepat",
+                joinDate: "2022-11-05",
+                totalVisits: 12,
+                totalSpent: 18900000,
+                lastVisit: "2025-11-22",
+                preferredServices: ["MacBook Repair", "iPhone Screen"]
+            },
+            {
+                id: 6,
+                name: "Eko Prasetyo",
+                email: "eko.prasetyo@email.com",
+                phone: "086789012345",
+                address: "Jl. Kuningan No. 34, Jakarta Pusat",
+                status: "regular",
+                birthDate: "1989-11-12",
+                gender: "male",
+                notes: "Student, budget terbatas",
+                joinDate: "2023-09-18",
+                totalVisits: 3,
+                totalSpent: 2800000,
+                lastVisit: "2025-10-30",
+                preferredServices: ["Android Phone Repair"]
+            }
+        ];
+
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let sortBy = 'name';
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCustomers();
+            initializeChart();
+            setupEventListeners();
+            initializeAnimations();
+        });
+
+        function setupEventListeners() {
+            // Status filters
+            document.querySelectorAll('.status-filter').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.status-filter').forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.classList.add('bg-gray-100', 'text-gray-700');
+                    });
+                    
+                    this.classList.add('active');
+                    this.classList.remove('bg-gray-100', 'text-gray-700');
+                    
+                    currentFilter = this.dataset.status;
+                    renderCustomers();
+                });
+            });
+
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', function() {
+                searchQuery = this.value.toLowerCase();
+                renderCustomers();
+            });
+
+            // Sort dropdown
+            document.getElementById('sortBy').addEventListener('change', function() {
+                sortBy = this.value;
+                renderCustomers();
+            });
+        }
+
+        function renderCustomers() {
+            const grid = document.getElementById('customersGrid');
+            grid.innerHTML = '';
+
+            let filteredCustomers = customers.filter(customer => {
+                // Status filter
+                if (currentFilter !== 'all' && customer.status !== currentFilter) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchQuery && !customer.name.toLowerCase().includes(searchQuery) && 
+                    !customer.email.toLowerCase().includes(searchQuery) &&
+                    !customer.phone.includes(searchQuery)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Sort customers
+            filteredCustomers.sort((a, b) => {
+                switch (sortBy) {
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'date':
+                        return new Date(b.joinDate) - new Date(a.joinDate);
+                    case 'visits':
+                        return b.totalVisits - a.totalVisits;
+                    case 'status':
+                        return a.status.localeCompare(b.status);
+                    default:
+                        return 0;
+                }
+            });
+
+            filteredCustomers.forEach((customer, index) => {
+                const card = createCustomerCard(customer);
+                card.style.animationDelay = `${index * 100}ms`;
+                grid.appendChild(card);
+            });
+
+            updateStats();
+        }
+
+        function createCustomerCard(customer) {
+            const card = document.createElement('div');
+            card.className = 'customer-card bg-white p-6 rounded-xl shadow-sm border fade-in';
+            card.onclick = () => showCustomerDetail(customer);
+
+            const statusClass = `status-${customer.status}`;
+            const statusText = {
+                'regular': 'Regular',
+                'vip': 'VIP',
+                'new': 'New'
+            };
+
+            const genderIcon = customer.gender === 'male' ? 'fas fa-mars text-blue-500' : 'fas fa-venus text-pink-500';
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">${customer.name.split(' ').map(n => n[0]).join('')}</span>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900">${customer.name}</h3>
+                            <div class="flex items-center space-x-2">
+                                <i class="${genderIcon} text-xs"></i>
+                                <span class="text-xs text-gray-500">${customer.phone}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full ${statusClass}">${statusText[customer.status]}</span>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Email:</span>
+                        <span class="text-sm text-gray-900 truncate">${customer.email}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Total Kunjungan:</span>
+                        <span class="text-sm font-semibold text-gray-900">${customer.totalVisits}x</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Total Belanja:</span>
+                        <span class="text-sm font-semibold text-gray-900">Rp ${formatCurrency(customer.totalSpent)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Terakhir Service:</span>
+                        <span class="text-sm text-gray-900">${formatDate(customer.lastVisit)}</span>
+                    </div>
+                </div>
+                
+                ${customer.preferredServices.length > 0 ? `
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <p class="text-xs text-gray-500 mb-2">Service Favorit:</p>
+                        <div class="flex flex-wrap gap-1">
+                            ${customer.preferredServices.slice(0, 2).map(service => 
+                                `<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">${service}</span>`
+                            ).join('')}
+                            ${customer.preferredServices.length > 2 ? `<span class="text-xs text-gray-500">+${customer.preferredServices.length - 2} lainnya</span>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="mt-4 flex space-x-2">
+                    <button onclick="event.stopPropagation(); sendWhatsApp('${customer.phone}', '${customer.name}')" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors">
+                        <i class="fab fa-whatsapp mr-1"></i>WhatsApp
+                    </button>
+                    <button onclick="event.stopPropagation(); sendEmail('${customer.email}', '${customer.name}')" class="flex-1 bg-blue-100 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
+                        <i class="fas fa-envelope mr-1"></i>Email
+                    </button>
+                    <button onclick="event.stopPropagation(); editCustomer(${customer.id})" class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-edit mr-1"></i>Edit
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function updateStats() {
+            const totalCustomers = customers.length;
+            const vipCustomers = customers.filter(c => c.status === 'vip').length;
+            const newThisMonth = customers.filter(c => {
+                const joinDate = new Date(c.joinDate);
+                const thisMonth = new Date();
+                return joinDate.getMonth() === thisMonth.getMonth() && 
+                       joinDate.getFullYear() === thisMonth.getFullYear();
+            }).length;
+            const avgService = customers.reduce((sum, c) => sum + c.totalVisits, 0) / totalCustomers;
+
+            document.getElementById('totalCustomers').textContent = totalCustomers;
+            document.getElementById('vipCustomers').textContent = vipCustomers;
+            
+            // Update stats cards
+            const statsCards = document.querySelectorAll('.fade-in');
+            statsCards[0].querySelector('.text-2xl').textContent = totalCustomers;
+            statsCards[1].querySelector('.text-2xl').textContent = vipCustomers;
+            statsCards[2].querySelector('.text-2xl').textContent = newThisMonth;
+            statsCards[3].querySelector('.text-2xl').textContent = avgService.toFixed(1);
+        }
+
+        function initializeChart() {
+            const chart = echarts.init(document.getElementById('customerChart'));
+            
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const customerData = [12, 15, 18, 22, 25, 28, 32, 35, 38, 42, 45, 48];
+            const vipData = [2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20];
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['Total Customers', 'VIP Customers']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: months
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [
+                    {
+                        name: 'Total Customers',
+                        type: 'line',
+                        data: customerData,
+                        itemStyle: {
+                            color: '#3b82f6'
+                        },
+                        smooth: true
+                    },
+                    {
+                        name: 'VIP Customers',
+                        type: 'line',
+                        data: vipData,
+                        itemStyle: {
+                            color: '#f59e0b'
+                        },
+                        smooth: true
+                    }
+                ]
+            };
+
+            chart.setOption(option);
+            
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+
+        function openCustomerModal() {
+            document.getElementById('customerModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            document.getElementById('customerForm').reset();
+            document.getElementById('modalTitle').textContent = 'Tambah Customer Baru';
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customerModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            
+            document.getElementById('customerForm').reset();
+            delete document.getElementById('customerForm').dataset.customerId;
+        }
+
+        function showCustomerDetail(customer) {
+            const modal = document.getElementById('customerDetailModal');
+            const content = document.getElementById('customerDetailContent');
+            
+            const statusClass = `status-${customer.status}`;
+            const statusText = {
+                'regular': 'Regular',
+                'vip': 'VIP',
+                'new': 'New'
+            };
+
+            const genderIcon = customer.gender === 'male' ? 'fas fa-mars text-blue-500' : 'fas fa-venus text-pink-500';
+            const genderText = customer.gender === 'male' ? 'Laki-laki' : 'Perempuan';
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Pribadi</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Nama Lengkap</label>
+                                <div class="flex items-center space-x-2">
+                                    <p class="text-gray-900">${customer.name}</p>
+                                    <i class="${genderIcon}"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Email</label>
+                                <p class="text-gray-900">${customer.email}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Nomor Telepon</label>
+                                <p class="text-gray-900">${customer.phone}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Alamat</label>
+                                <p class="text-gray-900">${customer.address}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Jenis Kelamin</label>
+                                <p class="text-gray-900">${genderText}</p>
+                            </div>
+                            ${customer.birthDate ? `
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500">Tanggal Lahir</label>
+                                    <p class="text-gray-900">${formatDate(customer.birthDate)}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Customer</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Status</label>
+                                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium ${statusClass} capitalize">
+                                    ${statusText[customer.status]}
+                                </span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Bergabung Sejak</label>
+                                <p class="text-gray-900">${formatDate(customer.joinDate)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Total Kunjungan</label>
+                                <p class="text-gray-900 font-semibold">${customer.totalVisits}x service</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Total Belanja</label>
+                                <p class="text-gray-900 font-semibold">Rp ${formatCurrency(customer.totalSpent)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Terakhir Service</label>
+                                <p class="text-gray-900">${formatDate(customer.lastVisit)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${customer.preferredServices.length > 0 ? `
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Service Favorit</h3>
+                        <div class="flex flex-wrap gap-2">
+                            ${customer.preferredServices.map(service => 
+                                `<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">${service}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${customer.notes ? `
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Catatan</h3>
+                        <p class="text-gray-700">${customer.notes}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex justify-end space-x-4">
+                        <button onclick="sendWhatsApp('${customer.phone}', '${customer.name}')" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fab fa-whatsapp mr-2"></i>Kirim WhatsApp
+                        </button>
+                        <button onclick="sendEmail('${customer.email}', '${customer.name}')" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-envelope mr-2"></i>Kirim Email
+                        </button>
+                        <button onclick="editCustomer(${customer.id})" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Edit Customer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCustomerDetailModal() {
+            document.getElementById('customerDetailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function sendWhatsApp(phone, name) {
+            const message = `Halo ${name}, ini dari RepairFlow. Ada yang bisa kami bantu?`;
+            const url = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+            showNotification(`WhatsApp dikirim ke ${name}`);
+        }
+
+        function sendEmail(email, name) {
+            const subject = 'Halo dari RepairFlow';
+            const body = `Halo ${name},\n\nTerima kasih sudah menjadi pelanggan setia kami. Ada yang bisa kami bantu?`;
+            const url = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(url, '_blank');
+            showNotification(`Email dikirim ke ${name}`);
+        }
+
+        function editCustomer(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) return;
+
+            // Populate form with existing data
+            document.getElementById('customerName').value = customer.name;
+            document.getElementById('customerEmail').value = customer.email;
+            document.getElementById('customerPhone').value = customer.phone;
+            document.getElementById('customerStatus').value = customer.status;
+            document.getElementById('customerAddress').value = customer.address;
+            document.getElementById('customerBirthDate').value = customer.birthDate;
+            document.getElementById('customerGender').value = customer.gender;
+            document.getElementById('customerNotes').value = customer.notes;
+
+            // Store customer ID for update
+            document.getElementById('customerForm').dataset.customerId = customerId;
+            document.getElementById('modalTitle').textContent = 'Edit Customer';
+            
+            closeCustomerDetailModal();
+            openCustomerModal();
+        }
+
+        // Form submission
+        document.getElementById('customerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const customerId = this.dataset.customerId;
+            const customerData = {
+                name: document.getElementById('customerName').value,
+                email: document.getElementById('customerEmail').value,
+                phone: document.getElementById('customerPhone').value,
+                status: document.getElementById('customerStatus').value,
+                address: document.getElementById('customerAddress').value,
+                birthDate: document.getElementById('customerBirthDate').value,
+                gender: document.getElementById('customerGender').value,
+                notes: document.getElementById('customerNotes').value,
+                joinDate: customerId ? customers.find(c => c.id === parseInt(customerId))?.joinDate : new Date().toISOString().split('T')[0],
+                totalVisits: customerId ? customers.find(c => c.id === parseInt(customerId))?.totalVisits || 0 : 0,
+                totalSpent: customerId ? customers.find(c => c.id === parseInt(customerId))?.totalSpent || 0 : 0,
+                lastVisit: customerId ? customers.find(c => c.id === parseInt(customerId))?.lastVisit || new Date().toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                preferredServices: customerId ? customers.find(c => c.id === parseInt(customerId))?.preferredServices || [] : []
+            };
+
+            if (customerId) {
+                // Update existing customer
+                const customerIndex = customers.findIndex(c => c.id === parseInt(customerId));
+                if (customerIndex !== -1) {
+                    customers[customerIndex] = { ...customers[customerIndex], ...customerData };
+                    showNotification(`Customer #${customerId} berhasil diupdate`);
+                }
+            } else {
+                // Add new customer
+                const newId = Math.max(...customers.map(c => c.id)) + 1;
+                customers.push({ id: newId, ...customerData });
+                showNotification(`Customer baru #${newId} berhasil ditambahkan`);
+            }
+
+            renderCustomers();
+            initializeChart();
+            closeCustomerModal();
+            
+            // Reset form
+            this.reset();
+            delete this.dataset.customerId;
+        });
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('id-ID');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function initializeAnimations() {
+            anime({
+                targets: '.fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 800,
+                delay: anime.stagger(100),
+                easing: 'easeOutQuart'
+            });
+
+            anime({
+                targets: '.slide-in-left',
+                opacity: [0, 1],
+                translateX: [-30, 0],
+                duration: 800,
+                delay: 200,
+                easing: 'easeOutQuart'
+            });
+
+            anime({
+                targets: '.slide-in-right',
+                opacity: [0, 1],
+                translateX: [30, 0],
+                duration: 800,
+                delay: 300,
+                easing: 'easeOutQuart'
+            });
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('customerModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCustomerModal();
+            }
+        });
+
+        document.getElementById('customerDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCustomerDetailModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RepairFlow - Sistem Pengurusan Bengkel Telefon Pintar & Repair Shop Terbaik di Malaysia</title>
+    <meta name="description" content="RepairFlow ialah sistem pengurusan bengkel telefon pintar dan repair shop terbaik di Malaysia. Urus job sheet, inventori, POS, invois, staf & pelanggan dengan sistem SaaS moden. Percubaan percuma 14 hari!">
+    <meta name="keywords" content="sistem pengurusan bengkel telefon, software repair shop Malaysia, sistem POS bengkel, pengurusan inventori spare part, job sheet repair, sistem invois bengkel">
+    <meta name="author" content="RepairFlow Malaysia">
+    <meta property="og:title" content="RepairFlow - Sistem Pengurusan Bengkel Telefon Pintar Terbaik Malaysia">
+    <meta property="og:description" content="Sistem pengurusan bengkel telefon pintar dan repair shop terlengkap di Malaysia. Urus job sheet, inventori, POS & invois dengan sistem SaaS moden. Percubaan percuma!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://repairflow.my">
+    <meta property="og:image" content="https://repairflow.my/images/hero-repair-shop.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RepairFlow - Sistem Pengurusan Bengkel Telefon Pintar Terbaik">
+    <meta name="twitter:description" content="Sistem pengurusan bengkel telefon pintar dan repair shop terlengkap di Malaysia. Percubaan percuma 14 hari!">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.3.2/dist/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+        
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(50px);
+        }
+        
+        .modal-overlay {
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .feature-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .pricing-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .pricing-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+        }
+        
+        .pricing-card.featured {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+        }
+        
+        #particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 feature-icon rounded-xl flex items-center justify-center">
+                            <i class="fas fa-tools text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-bold text-gradient">RepairFlow</span>
+                            <p class="text-xs text-gray-500">Sistem Pengurusan Bengkel</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Ciri-ciri</a>
+                    <a href="#pricing" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Harga</a>
+                    <a href="#testimonials" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Testimoni</a>
+                    <a href="#contact" class="text-gray-700 hover:text-blue-600 font-medium transition-colors">Hubungi</a>
+                    <button onclick="openLoginModal()" class="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                        Log Masuk
+                    </button>
+                    <button onclick="openRegistrationModal()" class="btn-primary text-white px-6 py-2 rounded-lg font-medium">
+                        Daftar Percuma
+                    </button>
+                </div>
+                <div class="md:hidden">
+                    <button class="text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient min-h-screen flex items-center relative overflow-hidden pt-20">
+        <div id="particles-container"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="text-center lg:text-left">
+                    <h1 class="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                        Sistem Pengurusan
+                        <span id="typed-text" class="block text-yellow-300"></span>
+                        <span class="block text-3xl lg:text-4xl mt-2 opacity-90">Terbaik di Malaysia</span>
+                    </h1>
+                    <p class="text-xl text-white/90 mb-8 leading-relaxed">
+                        Urus bengkel telefon pintar dan repair shop anda dengan sistem SaaS moden. 
+                        Job sheet, inventori, POS, invois & pelanggan - semua dalam satu platform yang mudah digunakan.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <button onclick="openRegistrationModal()" class="bg-yellow-400 text-gray-900 px-8 py-4 rounded-lg font-bold text-lg hover:bg-yellow-300 transition-all transform hover:scale-105">
+                            <i class="fas fa-rocket mr-2"></i>
+                            Percubaan Percuma 14 Hari
+                        </button>
+                        <button onclick="scrollToDemo()" class="border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-gray-900 transition-all">
+                            <i class="fas fa-play mr-2"></i>
+                            Lihat Demo
+                        </button>
+                    </div>
+                    <div class="mt-8 flex items-center justify-center lg:justify-start space-x-6 text-white/80">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-300 mr-2"></i>
+                            <span>Tiada Kad Kredit Diperlukan</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle text-green-300 mr-2"></i>
+                            <span>Setup Dalam 5 Minit</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="floating-element">
+                        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a62d?w=600&h=400&fit=crop" 
+                             alt="Sistem Pengurusan Bengkel Telefon Pintar" 
+                             class="rounded-2xl shadow-2xl w-full">
+                    </div>
+                    <div class="absolute -top-4 -right-4 bg-yellow-400 text-gray-900 px-4 py-2 rounded-lg font-bold pulse-animation">
+                        <i class="fas fa-star mr-1"></i>
+                        Sistem #1 di Malaysia
+                    </div>
+                    <div class="absolute -bottom-4 -left-4 bg-white text-gray-900 px-4 py-2 rounded-lg shadow-lg">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full pulse-animation"></div>
+                            <span class="font-semibold">2,500+ Bengkel Digunakan</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Ciri-ciri Lengkap untuk Bengkel Anda
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Semua alat yang anda perlukan untuk mengurus bengkel telefon pintar dan repair shop dengan lebih efisien dan profesional.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="card-hover bg-white p-8 rounded-2xl shadow-lg border slide-in-left">
+                    <div class="w-16 h-16 feature-icon rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-tasks text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">JobSheet Management</h3>
+                    <p class="text-gray-600 mb-6">
+                        Urus setiap repair job dari penerimaan hingga penyerahan dengan sistem Kanban yang mudah. 
+                        Tetapkan teknisi, prioritikan kerja, dan pantau status setiap job dalam masa nyata.
+                    </p>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Status job: Pending, Diagnosis, In Progress, Ready, Delivered</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Penetapan teknisi dan prioritikan kerja</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Notifikasi status dalam masa nyata</li>
+                    </ul>
+                </div>
+                
+                <div class="card-hover bg-white p-8 rounded-2xl shadow-lg border fade-in">
+                    <div class="w-16 h-16 feature-icon rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-boxes text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Inventory Management</h3>
+                    <p class="text-gray-600 mb-6">
+                        Kawal stok spare parts dan aksesori dengan sistem inventori yang canggih. 
+                        Dapatkan amaran stok rendah dan pantau pergerakan inventori dengan terperinci.
+                    </p>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Kategori: Screen, Battery, Camera, Motherboard, Tools</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Amaran stok rendah dan auto-reorder</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Analisis pergerakan inventori</li>
+                    </ul>
+                </div>
+                
+                <div class="card-hover bg-white p-8 rounded-2xl shadow-lg border slide-in-right">
+                    <div class="w-16 h-16 feature-icon rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-cash-register text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">POS System</h3>
+                    <p class="text-gray-600 mb-6">
+                        Sistem POS moden untuk urus transaksi jualan dan servis. Sokong pelbagai kaedah bayaran 
+                        dengan integrasi pembayaran digital dan cetakan resit profesional.
+                    </p>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Barcode scanning dan cart management</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Pelbagai kaedah bayaran (Tunai, Kad, Digital)</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Cetakan resit profesional</li>
+                    </ul>
+                </div>
+                
+                <div class="card-hover bg-white p-8 rounded-2xl shadow-lg border slide-in-left">
+                    <div class="w-16 h-16 feature-icon rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-users text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Staff Management</h3>
+                    <p class="text-gray-600 mb-6">
+                        Urus staf dan teknisi dengan sistem kawalan akses yang fleksibel. 
+                        Pantau prestasi, tetapkan tugasan, dan urus gaji dengan sistem yang telus.
+                    </p>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Kawalan akses berasaskan peranan</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Pemantauan prestasi teknisi</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Sistem gaji dan komisen</li>
+                    </ul>
+                </div>
+                
+                <div class="card-hover bg-white p-8 rounded-2xl shadow-lg border fade-in">
+                    <div class="w-16 h-16 feature-icon rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-user-friends text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Customer Management</h3>
+                    <p class="text-gray-600 mb-6">
+                        Bina hubungan pelanggan yang kukuh dengan sistem CRM yang canggih. 
+                        Jejak sejarah servis, komunikasi tergabung, dan program kesetiaan pelanggan.
+                    </p>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Sejarah servis dan nota pelanggan</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Integrasi WhatsApp & Email</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Program VIP dan diskaun</li>
+                    </ul>
+                </div>
+                
+                <div class="card-hover bg-white p-8 rounded-2xl shadow-lg border slide-in-right">
+                    <div class="w-16 h-16 feature-icon rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-file-invoice text-white text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">Invoice Management</h3>
+                    <p class="text-gray-600 mb-6">
+                        Cipta dan urus invois dengan sistem yang profesional. 
+                        Pantau pembayaran, urus piutang, dan hasilkan laporan kewangan dengan mudah.
+                    </p>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Penjanaan invois automatik</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Pemantauan pembayaran</li>
+                        <li class="flex items-center"><i class="fas fa-check text-green-500 mr-2"></i>Laporan kewangan terperinci</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Lihat Sistem Dalam Tindakan
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Jelajahi ciri-ciri lengkap RepairFlow dengan demo interaktif kami. 
+                    Lihat bagaimana sistem kami boleh membantu mengurus bengkel anda dengan lebih efisien.
+                </p>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in">
+                <div class="bg-gray-800 px-6 py-4 flex items-center space-x-4">
+                    <div class="flex space-x-2">
+                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                    </div>
+                    <div class="text-white text-sm">RepairFlow Dashboard - Demo Interaktif</div>
+                </div>
+                <div class="p-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2">
+                            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop" 
+                                 alt="Dashboard RepairFlow" 
+                                 class="rounded-lg shadow-lg w-full">
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-blue-50 p-6 rounded-lg">
+                                <h4 class="font-bold text-gray-900 mb-3">
+                                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                                    Analytics Dashboard
+                                </h4>
+                                <p class="text-gray-600 text-sm">
+                                    Pantau prestasi bengkel anda dengan grafik dan metrik yang jelas. 
+                                    Lihat pendapatan, job completion rate, dan trend pelanggan dalam masa nyata.
+                                </p>
+                            </div>
+                            <div class="bg-green-50 p-6 rounded-lg">
+                                <h4 class="font-bold text-gray-900 mb-3">
+                                    <i class="fas fa-tasks text-green-600 mr-2"></i>
+                                    Job Management
+                                </h4>
+                                <p class="text-gray-600 text-sm">
+                                    Urus repair job dengan sistem Kanban yang intuitif. 
+                                    Seret dan lepas job antara status untuk kemas kini masa nyata.
+                                </p>
+                            </div>
+                            <div class="bg-purple-50 p-6 rounded-lg">
+                                <h4 class="font-bold text-gray-900 mb-3">
+                                    <i class="fas fa-credit-card text-purple-600 mr-2"></i>
+                                    POS Integration
+                                </h4>
+                                <p class="text-gray-600 text-sm">
+                                    Proses transaksi dengan sistem POS moden. 
+                                    Sokong pelbagai kaedah bayaran dengan resit profesional.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <button onclick="window.location.href='dashboard.html'" class="btn-primary text-white px-8 py-4 rounded-lg font-bold text-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Cuba Demo Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Pelan Harga Sesuai untuk Setiap Bengkel
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Pilih pelan yang sesuai dengan keperluan bengkel anda. Semua pelan termasuk sokongan penuh dan kemas kini berkala.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="pricing-card bg-white p-8 rounded-2xl shadow-lg border">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                        <p class="text-gray-600 mb-4">Untuk bengkel kecil dan pemula</p>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">
+                            RM129<span class="text-lg font-normal text-gray-600">/bulan</span>
+                        </div>
+                        <p class="text-sm text-gray-500">Dibill RM1,548 setahun</p>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Sehingga 50 job sebulan</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>2 pengguna staf</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Inventori asas</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>POS system</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Sokongan email</span>
+                        </li>
+                    </ul>
+                    <button onclick="selectPlan('starter')" class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition-colors">
+                        Pilih Pelan
+                    </button>
+                </div>
+                
+                <div class="pricing-card featured bg-white p-8 rounded-2xl shadow-xl border relative">
+                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span class="bg-blue-600 text-white px-6 py-2 rounded-full text-sm font-bold">
+                            PALING POPULAR
+                        </span>
+                    </div>
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
+                        <p class="text-gray-600 mb-4">Untuk bengkel sederhana dan berkembang</p>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">
+                            RM299<span class="text-lg font-normal text-gray-600">/bulan</span>
+                        </div>
+                        <p class="text-sm text-gray-500">Dibill RM3,588 setahun</p>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Sehingga 200 job sebulan</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>10 pengguna staf</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Inventori lengkap dengan amaran</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>POS + sistem invois</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>CRM pelanggan</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Laporan terperinci</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Sokongan telefon & email</span>
+                        </li>
+                    </ul>
+                    <button onclick="selectPlan('professional')" class="w-full btn-primary text-white py-3 rounded-lg font-bold">
+                        Pilih Pelan Professional
+                    </button>
+                </div>
+                
+                <div class="pricing-card bg-white p-8 rounded-2xl shadow-lg border">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                        <p class="text-gray-600 mb-4">Untuk bengkel besar dan rangkaian</p>
+                        <div class="text-4xl font-bold text-gray-900 mb-2">
+                            RM599<span class="text-lg font-normal text-gray-600">/bulan</span>
+                        </div>
+                        <p class="text-sm text-gray-500">Dibill RM7,188 setahun</p>
+                    </div>
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Job tanpa had</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Pengguna tanpa had</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Inventori advanced dengan AI</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Sistem POS berkelas enterprise</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>CRM dengan automation</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>API integration</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            <span>Sokongan 24/7 priority</span>
+                        </li>
+                    </ul>
+                    <button onclick="selectPlan('enterprise')" class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-200 transition-colors">
+                        Pilih Pelan
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-center mt-12 fade-in">
+                <p class="text-gray-600 mb-4">
+                    Semua pelan termasuk kemas kini percuma, sokongan teknikal, dan backup data harian.
+                </p>
+                <p class="text-sm text-gray-500">
+                    *Boleh batalkan bila-bila masa. Tiada caj tersembunyi.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Apa Kata Pengguna Kami
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Lebih 2,500 bengkel telefon pintar di Malaysia telah menggunakan RepairFlow untuk menguruskan operasi harian mereka.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-lg slide-in-left">
+                    <div class="flex items-center mb-6">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face" 
+                             alt="Ahmad - TechFix Solutions" 
+                             class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold text-gray-900">Ahmad Rahman</h4>
+                            <p class="text-sm text-gray-600">TechFix Solutions, KL</p>
+                        </div>
+                    </div>
+                    <div class="flex text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        "RepairFlow telah mengubah cara kami mengurus bengkel. Sistem job sheet sangat membantu 
+                        dalam mengurus repair iPhone dan Samsung. Pelanggan juga gembira dengan resit profesional."
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <strong>Keputusan:</strong> Meningkatkan efisiensi sebanyak 60%
+                    </div>
+                </div>
+                
+                <div class="bg-white p-8 rounded-2xl shadow-lg fade-in">
+                    <div class="flex items-center mb-6">
+                        <img src="https://images.unsplash.com/photo-1494790108755-2616b612b786?w=60&h=60&fit=crop&crop=face" 
+                             alt="Siti - MobileCare Center" 
+                             class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold text-gray-900">Siti Nurhaliza</h4>
+                            <p class="text-sm text-gray-600">MobileCare Center, PJ</p>
+                        </div>
+                    </div>
+                    <div class="flex text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        "Sistem inventori sangat membantu mengurus stok spare part. Amaran stok rendah 
+                        menjimatkan banyak masa dan mengelakkan kehilangan pelanggan kerana part tiada stok."
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <strong>Keputusan:</strong> Mengurangkan kos inventori sebanyak 35%
+                    </div>
+                </div>
+                
+                <div class="bg-white p-8 rounded-2xl shadow-lg slide-in-right">
+                    <div class="flex items-center mb-6">
+                        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop&crop=face" 
+                             alt="Raj - iRepair Pro" 
+                             class="w-12 h-12 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold text-gray-900">Raj Kumar</h4>
+                            <p class="text-sm text-gray-600">iRepair Pro, Penang</p>
+                        </div>
+                    </div>
+                    <div class="flex text-yellow-400 mb-4">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        "Sokongan pelanggan RepairFlow sangat hebat. Mereka sentiasa sedia membantu 
+                        dan sistem sentiasa dikemaskini dengan ciri-ciri baharu yang berguna."
+                    </p>
+                    <div class="text-sm text-gray-500">
+                        <strong>Keputusan:</strong> Meningkatkan kepuasan pelanggan sebanyak 45%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 hero-gradient">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="fade-in">
+                <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6">
+                    Sedia untuk Meningkatkan Pengurusan Bengkel Anda?
+                </h2>
+                <p class="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
+                    Bergabung dengan lebih 2,500 bengkel telefon pintar di Malaysia yang telah menggunakan RepairFlow. 
+                    Mulakan percubaan percuma 14 hari hari ini dan lihat perbezaannya.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="openRegistrationModal()" class="bg-yellow-400 text-gray-900 px-8 py-4 rounded-lg font-bold text-lg hover:bg-yellow-300 transition-all transform hover:scale-105">
+                        <i class="fas fa-rocket mr-2"></i>
+                        Mulakan Percubaan Percuma
+                    </button>
+                    <button onclick="window.location.href='tel:013-4567890'" class="border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-gray-900 transition-all">
+                        <i class="fas fa-phone mr-2"></i>
+                        Hubungi Kami
+                    </button>
+                </div>
+                <div class="mt-8 text-white/80">
+                    <p class="mb-2">❓ Ada soalan? Hubungi kami di <strong>013-4567890</strong></p>
+                    <p>📧 Email: <strong>hello@repairflow.my</strong></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-10 h-10 feature-icon rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tools text-white"></i>
+                        </div>
+                        <span class="text-xl font-bold">RepairFlow</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Sistem pengurusan bengkel telefon pintar dan repair shop terbaik di Malaysia. 
+                        Membantu lebih 2,500 bengkel mengurus operasi harian dengan lebih efisien.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Ciri-ciri Utama</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#features" class="hover:text-white transition-colors">JobSheet Management</a></li>
+                        <li><a href="#features" class="hover:text-white transition-colors">Inventory Management</a></li>
+                        <li><a href="#features" class="hover:text-white transition-colors">POS System</a></li>
+                        <li><a href="#features" class="hover:text-white transition-colors">Staff Management</a></li>
+                        <li><a href="#features" class="hover:text-white transition-colors">Customer Management</a></li>
+                        <li><a href="#features" class="hover:text-white transition-colors">Invoice Management</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Sokongan</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Pusat Bantuan</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Video Tutorial</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Dokumentasi API</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Hubungi Sokongan</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Status Sistem</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-bold mb-4">Maklumat Syarikat</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>RepairFlow Sdn. Bhd.</li>
+                        <li>Level 12, Menara ABC</li>
+                        <li>Jalan Tun Razak, KL</li>
+                        <li>Telefon: 013-4567890</li>
+                        <li>Email: hello@repairflow.my</li>
+                        <li>Web: www.repairflow.my</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 RepairFlow Sdn. Bhd. Hak cipta terpelihara.</p>
+                <p class="mt-2 text-sm">
+                    Dilindungi oleh lesen perisian dan undang-undang Malaysia. 
+                    Sistem pengurusan bengkel telefon pintar dan repair shop nombor 1 di Malaysia.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Registration Modal -->
+    <div id="registrationModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Daftar Percubaan Percuma</h2>
+                    <button onclick="closeRegistrationModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-bold text-blue-900 mb-2">
+                        <i class="fas fa-gift mr-2"></i>
+                        Apa yang Anda Dapat:
+                    </h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                        <li>✅ Akses penuh kepada semua ciri-ciri Professional</li>
+                        <li>✅ 14 hari percubaan tanpa had</li>
+                        <li>✅ Setup dan onboarding percuma</li>
+                        <li>✅ Sokongan teknikal 24/7</li>
+                        <li>✅ Tiada caj tersembunyi - boleh batalkan bila-bila masa</li>
+                    </ul>
+                </div>
+                
+                <form id="registrationForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Penuh</label>
+                            <input type="text" id="fullName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan nama penuh" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nombor Telefon</label>
+                            <input type="tel" id="phone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="012-3456789" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email Perniagaan</label>
+                        <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="your@business.com" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Bengkel/Perniagaan</label>
+                        <input type="text" id="businessName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Contoh: TechFix Solutions" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Perniagaan</label>
+                            <select id="businessType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">Pilih jenis perniagaan</option>
+                                <option value="phone-repair">Bengkel Telefon Pintar</option>
+                                <option value="computer-repair">Bengkel Komputer/Laptop</option>
+                                <option value="electronics-repair">Bengkel Elektronik</option>
+                                <option value="mobile-accessories">Kedai Aksesori Mobile</option>
+                                <option value="other">Lain-lain</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bilangan Staf</label>
+                            <select id="staffCount" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">Pilih bilangan staf</option>
+                                <option value="1-2">1-2 orang</option>
+                                <option value="3-5">3-5 orang</option>
+                                <option value="6-10">6-10 orang</option>
+                                <option value="11-20">11-20 orang</option>
+                                <option value="20+">Lebih 20 orang</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Subdomain (contoh: yourshop.repairflow.my)</label>
+                        <div class="flex">
+                            <input type="text" id="subdomain" class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="yourshop" required>
+                            <div class="px-4 py-3 bg-gray-100 border border-gray-300 border-l-0 rounded-r-lg text-gray-600">
+                                .repairflow.my
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Ini akan menjadi URL unik untuk sistem anda</p>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <input type="checkbox" id="terms" class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" required>
+                        <label for="terms" class="ml-3 text-sm text-gray-600">
+                            Saya bersetuju dengan <a href="#" class="text-blue-600 hover:underline">Terma & Syarat</a> dan 
+                            <a href="#" class="text-blue-600 hover:underline">Polisi Privasi</a> RepairFlow.
+                        </label>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <input type="checkbox" id="marketing" class="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="marketing" class="ml-3 text-sm text-gray-600">
+                            Saya ingin menerima email tentang ciri-ciri baharu, tip perniagaan, dan tawaran istimewa.
+                        </label>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="closeRegistrationModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-6 py-3 btn-primary text-white rounded-lg font-bold">
+                            <i class="fas fa-rocket mr-2"></i>
+                            Mulakan Percubaan Percuma
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Log Masuk ke RepairFlow</h2>
+                    <button onclick="closeLoginModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subdomain atau Email</label>
+                        <input type="text" id="loginIdentifier" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="yourshop.repairflow.my atau email" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kata Laluan</label>
+                        <input type="password" id="loginPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Masukkan kata laluan" required>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="rememberMe" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="rememberMe" class="ml-2 text-sm text-gray-600">Ingat saya</label>
+                        </div>
+                        <a href="#" class="text-sm text-blue-600 hover:underline">Lupa kata laluan?</a>
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-primary text-white py-3 rounded-lg font-bold">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Log Masuk
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600 mb-4">ATAU</p>
+                    <div class="space-y-3">
+                        <button onclick="window.location.href='dashboard.html'" class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-desktop mr-2"></i>
+                            Demo Dashboard
+                        </button>
+                        <button onclick="window.location.href='jobsheet.html'" class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-tasks mr-2"></i>
+                            Demo JobSheet
+                        </button>
+                        <button onclick="window.location.href='pos.html'" class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-cash-register mr-2"></i>
+                            Demo POS System
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Tiada akaun? 
+                        <button onclick="switchToRegistration()" class="text-blue-600 hover:underline font-medium">
+                            Daftar percuma di sini
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Typed.js initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            new Typed('#typed-text', {
+                strings: [
+                    'Bengkel Telefon Pintar',
+                    'Repair Shop',
+                    'Bengkel Elektronik',
+                    'Kedai Aksesori Mobile'
+                ],
+                typeSpeed: 80,
+                backSpeed: 50,
+                backDelay: 2000,
+                loop: true,
+                showCursor: true,
+                cursorChar: '|'
+            });
+
+            // Initialize animations
+            initializeAnimations();
+            
+            // Initialize particles
+            initializeParticles();
+            
+            // Form submissions
+            setupFormHandlers();
+        });
+
+        function initializeAnimations() {
+            // Animate elements on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        if (entry.target.classList.contains('fade-in')) {
+                            anime({
+                                targets: entry.target,
+                                opacity: [0, 1],
+                                translateY: [30, 0],
+                                duration: 800,
+                                easing: 'easeOutQuart'
+                            });
+                        }
+                        if (entry.target.classList.contains('slide-in-left')) {
+                            anime({
+                                targets: entry.target,
+                                opacity: [0, 1],
+                                translateX: [-50, 0],
+                                duration: 800,
+                                easing: 'easeOutQuart'
+                            });
+                        }
+                        if (entry.target.classList.contains('slide-in-right')) {
+                            anime({
+                                targets: entry.target,
+                                opacity: [0, 1],
+                                translateX: [50, 0],
+                                duration: 800,
+                                easing: 'easeOutQuart'
+                            });
+                        }
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all animated elements
+            document.querySelectorAll('.fade-in, .slide-in-left, .slide-in-right').forEach(el => {
+                observer.observe(el);
+            });
+        }
+
+        function initializeParticles() {
+            // Simple particle system using p5.js
+            new p5((p) => {
+                let particles = [];
+                
+                p.setup = () => {
+                    const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
+                    canvas.parent('particles-container');
+                    canvas.style('position', 'absolute');
+                    canvas.style('top', '0');
+                    canvas.style('left', '0');
+                    canvas.style('z-index', '1');
+                    
+                    // Create particles
+                    for (let i = 0; i < 50; i++) {
+                        particles.push({
+                            x: p.random(p.width),
+                            y: p.random(p.height),
+                            vx: p.random(-1, 1),
+                            vy: p.random(-1, 1),
+                            size: p.random(2, 6),
+                            opacity: p.random(0.1, 0.3)
+                        });
+                    }
+                };
+                
+                p.draw = () => {
+                    p.clear();
+                    
+                    particles.forEach(particle => {
+                        // Update position
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+                        
+                        // Wrap around edges
+                        if (particle.x < 0) particle.x = p.width;
+                        if (particle.x > p.width) particle.x = 0;
+                        if (particle.y < 0) particle.y = p.height;
+                        if (particle.y > p.height) particle.y = 0;
+                        
+                        // Draw particle
+                        p.fill(255, 255, 255, particle.opacity * 255);
+                        p.noStroke();
+                        p.ellipse(particle.x, particle.y, particle.size);
+                    });
+                };
+                
+                p.windowResized = () => {
+                    p.resizeCanvas(window.innerWidth, window.innerHeight);
+                };
+            });
+        }
+
+        function setupFormHandlers() {
+            // Registration form
+            document.getElementById('registrationForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    fullName: document.getElementById('fullName').value,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('email').value,
+                    businessName: document.getElementById('businessName').value,
+                    businessType: document.getElementById('businessType').value,
+                    staffCount: document.getElementById('staffCount').value,
+                    subdomain: document.getElementById('subdomain').value
+                };
+                
+                // Simulate registration
+                showNotification('Pendaftaran berjaya! Akaun anda sedang disediakan...', 'success');
+                
+                setTimeout(() => {
+                    closeRegistrationModal();
+                    showNotification('Selamat datang ke RepairFlow! Sila log masuk untuk mula.', 'success');
+                }, 2000);
+            });
+
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const identifier = document.getElementById('loginIdentifier').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                // Simulate login
+                showNotification('Log masuk berjaya! Mengalihkan ke dashboard...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            });
+        }
+
+        function openRegistrationModal() {
+            document.getElementById('registrationModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRegistrationModal() {
+            document.getElementById('registrationModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('registrationForm').reset();
+        }
+
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('loginForm').reset();
+        }
+
+        function switchToRegistration() {
+            closeLoginModal();
+            setTimeout(() => {
+                openRegistrationModal();
+            }, 300);
+        }
+
+        function selectPlan(plan) {
+            const planNames = {
+                'starter': 'Starter (RM129/bulan)',
+                'professional': 'Professional (RM299/bulan)',
+                'enterprise': 'Enterprise (RM599/bulan)'
+            };
+            
+            showNotification(`Pelan ${planNames[plan]} dipilih! Sila daftar untuk mula.`, 'success');
+            openRegistrationModal();
+        }
+
+        function scrollToDemo() {
+            document.getElementById('demo').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('registrationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRegistrationModal();
+            }
+        });
+
+        document.getElementById('loginModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLoginModal();
+            }
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

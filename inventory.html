@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management - RepairFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .inventory-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .inventory-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stock-normal { border-left: 4px solid #10b981; }
+        .stock-low { border-left: 4px solid #f59e0b; }
+        .stock-critical { border-left: 4px solid #dc2626; }
+        
+        .category-filter.active {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .modal-overlay {
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .slide-in-left {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        
+        .stock-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .stock-normal-indicator { background: #10b981; }
+        .stock-low-indicator { background: #f59e0b; }
+        .stock-critical-indicator { background: #dc2626; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-tools text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">RepairFlow</span>
+                    </div>
+                    <div class="hidden md:flex space-x-6 ml-8">
+                        <a href="dashboard.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Dashboard</a>
+                        <a href="jobsheet.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">JobSheet</a>
+                        <a href="customers.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Customers</a>
+                        <a href="inventory.html" class="text-blue-600 bg-blue-50 px-3 py-2 text-sm font-medium rounded-md">Inventory</a>
+                        <a href="pos.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">POS</a>
+                        <a href="staff.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Staff</a>
+                        <a href="invoice.html" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">Invoice</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors" onclick="openInventoryModal()">
+                        <i class="fas fa-plus mr-2"></i>Tambah Item
+                    </button>
+                    <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">Inventory Management</h1>
+                    <p class="text-gray-600">Kelola stok spareparts dan perlengkapan repair shop</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white px-4 py-2 rounded-lg border border-gray-200">
+                        <span class="text-sm text-gray-500">Total Items:</span>
+                        <span class="text-lg font-bold text-gray-900 ml-2" id="totalItems">156</span>
+                    </div>
+                    <div class="bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                        <span class="text-sm text-red-600">Stock Rendah:</span>
+                        <span class="text-lg font-bold text-red-600 ml-2" id="lowStockItems">12</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Items</p>
+                        <p class="text-2xl font-bold text-gray-900">156</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Stock Normal</p>
+                        <p class="text-2xl font-bold text-gray-900">128</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Stock Rendah</p>
+                        <p class="text-2xl font-bold text-gray-900">12</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-red-100 rounded-lg">
+                        <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Stock Habis</p>
+                        <p class="text-2xl font-bold text-gray-900">16</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 fade-in">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <div class="flex flex-wrap gap-2">
+                    <button class="category-filter active px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-category="all">
+                        Semua Kategori
+                    </button>
+                    <button class="category-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-category="screen">
+                        Screen
+                    </button>
+                    <button class="category-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-category="battery">
+                        Battery
+                    </button>
+                    <button class="category-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-category="camera">
+                        Camera
+                    </button>
+                    <button class="category-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-category="motherboard">
+                        Motherboard
+                    </button>
+                    <button class="category-filter px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors" data-category="tools">
+                        Tools
+                    </button>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Cari item..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <select id="stockFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="all">Semua Stock</option>
+                        <option value="normal">Stock Normal</option>
+                        <option value="low">Stock Rendah</option>
+                        <option value="critical">Stock Habis</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Chart -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border mb-8 fade-in">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Grafik Stock Levels</h3>
+            <div id="stockChart" style="height: 300px;"></div>
+        </div>
+
+        <!-- Inventory Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="inventoryGrid">
+            <!-- Items will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Inventory Modal -->
+    <div id="inventoryModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalTitle">Tambah Item Baru</h2>
+                    <button onclick="closeInventoryModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <form id="inventoryForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Item</label>
+                            <input type="text" id="itemName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
+                            <select id="itemCategory" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">Pilih Kategori</option>
+                                <option value="screen">Screen</option>
+                                <option value="battery">Battery</option>
+                                <option value="camera">Camera</option>
+                                <option value="motherboard">Motherboard</option>
+                                <option value="tools">Tools</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
+                        <textarea id="itemDescription" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Deskripsi item..."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Stock Saat Ini</label>
+                            <input type="number" id="currentStock" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Stock</label>
+                            <input type="number" id="minimumStock" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="1" value="5" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Harga Beli</label>
+                            <input type="number" id="purchasePrice" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" required>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Harga Jual</label>
+                            <input type="number" id="sellingPrice" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                            <input type="text" id="supplier" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Nama supplier">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="closeInventoryModal()" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Simpan Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Detail Modal -->
+    <div id="itemDetailModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">Detail Item</h2>
+                    <button onclick="closeItemDetailModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6" id="itemDetailContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample inventory data
+        let inventoryItems = [
+            {
+                id: 1,
+                name: "iPhone 13 Pro Original Screen",
+                category: "screen",
+                description: "Original LCD screen assembly untuk iPhone 13 Pro dengan True Tone",
+                currentStock: 15,
+                minimumStock: 5,
+                purchasePrice: 1800000,
+                sellingPrice: 2200000,
+                supplier: "Apple Parts Indonesia",
+                lastRestocked: "2025-11-15"
+            },
+            {
+                id: 2,
+                name: "Samsung Galaxy S21 Battery",
+                category: "battery",
+                description: "Original battery 4000mAh untuk Samsung Galaxy S21",
+                currentStock: 8,
+                minimumStock: 10,
+                purchasePrice: 350000,
+                sellingPrice: 450000,
+                supplier: "Samsung Parts Center",
+                lastRestocked: "2025-11-20"
+            },
+            {
+                id: 3,
+                name: "iPhone Camera Module 12MP",
+                category: "camera",
+                description: "Rear camera module 12MP untuk iPhone 12/13 series",
+                currentStock: 25,
+                minimumStock: 8,
+                purchasePrice: 650000,
+                sellingPrice: 850000,
+                supplier: "iFixit Indonesia",
+                lastRestocked: "2025-11-10"
+            },
+            {
+                id: 4,
+                name: "MacBook Pro Logic Board 2020",
+                category: "motherboard",
+                description: "Logic board untuk MacBook Pro 13 inch 2020",
+                currentStock: 3,
+                minimumStock: 5,
+                purchasePrice: 8500000,
+                sellingPrice: 9500000,
+                supplier: "Apple Service Center",
+                lastRestocked: "2025-10-25"
+            },
+            {
+                id: 5,
+                name: "Precision Screwdriver Set",
+                category: "tools",
+                description: "Professional screwdriver set untuk repair smartphone",
+                currentStock: 45,
+                minimumStock: 10,
+                purchasePrice: 150000,
+                sellingPrice: 250000,
+                supplier: "Tools Pro Indonesia",
+                lastRestocked: "2025-11-05"
+            },
+            {
+                id: 6,
+                name: "iPhone 14 Pro Max Screen",
+                category: "screen",
+                description: "OLED screen assembly untuk iPhone 14 Pro Max",
+                currentStock: 0,
+                minimumStock: 3,
+                purchasePrice: 3200000,
+                sellingPrice: 3800000,
+                supplier: "Apple Parts Indonesia",
+                lastRestocked: "2025-10-15"
+            },
+            {
+                id: 7,
+                name: "Universal Battery 3000mAh",
+                category: "battery",
+                description: "Universal battery untuk berbagai smartphone Android",
+                currentStock: 35,
+                minimumStock: 15,
+                purchasePrice: 120000,
+                sellingPrice: 180000,
+                supplier: "Battery Master",
+                lastRestocked: "2025-11-12"
+            },
+            {
+                id: 8,
+                name: "Front Camera iPhone 13",
+                category: "camera",
+                description: "Front camera module dengan Face ID untuk iPhone 13",
+                currentStock: 12,
+                minimumStock: 6,
+                purchasePrice: 480000,
+                sellingPrice: 650000,
+                supplier: "iFixit Indonesia",
+                lastRestocked: "2025-11-08"
+            }
+        ];
+
+        let currentFilter = 'all';
+        let currentStockFilter = 'all';
+        let searchQuery = '';
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderInventory();
+            initializeChart();
+            initializeAnimations();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Category filters
+            document.querySelectorAll('.category-filter').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.category-filter').forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.classList.add('bg-gray-100', 'text-gray-700');
+                    });
+                    
+                    this.classList.add('active');
+                    this.classList.remove('bg-gray-100', 'text-gray-700');
+                    
+                    currentFilter = this.dataset.category;
+                    renderInventory();
+                });
+            });
+
+            // Search input
+            document.getElementById('searchInput').addEventListener('input', function() {
+                searchQuery = this.value.toLowerCase();
+                renderInventory();
+            });
+
+            // Stock filter
+            document.getElementById('stockFilter').addEventListener('change', function() {
+                currentStockFilter = this.value;
+                renderInventory();
+            });
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = '';
+
+            let filteredItems = inventoryItems.filter(item => {
+                // Category filter
+                if (currentFilter !== 'all' && item.category !== currentFilter) {
+                    return false;
+                }
+
+                // Search filter
+                if (searchQuery && !item.name.toLowerCase().includes(searchQuery) && 
+                    !item.description.toLowerCase().includes(searchQuery)) {
+                    return false;
+                }
+
+                // Stock filter
+                if (currentStockFilter !== 'all') {
+                    const stockStatus = getStockStatus(item.currentStock, item.minimumStock);
+                    if (stockStatus !== currentStockFilter) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            filteredItems.forEach((item, index) => {
+                const card = createInventoryCard(item);
+                card.style.animationDelay = `${index * 100}ms`;
+                grid.appendChild(card);
+            });
+
+            // Update stats
+            updateStats();
+        }
+
+        function createInventoryCard(item) {
+            const stockStatus = getStockStatus(item.currentStock, item.minimumStock);
+            const stockClass = `stock-${stockStatus}`;
+            const stockIndicator = `stock-${stockStatus}-indicator`;
+            
+            const card = document.createElement('div');
+            card.className = `inventory-card bg-white p-6 rounded-xl shadow-sm border ${stockClass} fade-in`;
+            card.onclick = () => showItemDetail(item);
+
+            const profit = item.sellingPrice - item.purchasePrice;
+            const profitMargin = ((profit / item.purchasePrice) * 100).toFixed(1);
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center">
+                        <span class="stock-indicator ${stockIndicator}"></span>
+                        <span class="text-xs text-gray-500 uppercase tracking-wide">${item.category}</span>
+                    </div>
+                    <span class="text-xs text-gray-400">#${item.id}</span>
+                </div>
+                
+                <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">${item.name}</h3>
+                <p class="text-sm text-gray-600 mb-4 line-clamp-2">${item.description}</p>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Stock:</span>
+                        <span class="text-sm font-semibold ${item.currentStock === 0 ? 'text-red-600' : item.currentStock <= item.minimumStock ? 'text-yellow-600' : 'text-green-600'}">
+                            ${item.currentStock} pcs
+                        </span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Minimum:</span>
+                        <span class="text-sm text-gray-900">${item.minimumStock} pcs</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-500">Harga Jual:</span>
+                        <span class="text-sm font-semibold text-gray-900">Rp ${formatCurrency(item.sellingPrice)}</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-500">Profit Margin:</span>
+                        <span class="font-semibold ${profitMargin > 30 ? 'text-green-600' : profitMargin > 20 ? 'text-yellow-600' : 'text-red-600'}">
+                            ${profitMargin}%
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex space-x-2">
+                    <button onclick="event.stopPropagation(); adjustStock(${item.id}, 'in')" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Stock In
+                    </button>
+                    <button onclick="event.stopPropagation(); adjustStock(${item.id}, 'out')" class="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors">
+                        <i class="fas fa-minus mr-1"></i>Stock Out
+                    </button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function getStockStatus(currentStock, minimumStock) {
+            if (currentStock === 0) return 'critical';
+            if (currentStock <= minimumStock) return 'low';
+            return 'normal';
+        }
+
+        function updateStats() {
+            const totalItems = inventoryItems.length;
+            const normalStock = inventoryItems.filter(item => getStockStatus(item.currentStock, item.minimumStock) === 'normal').length;
+            const lowStock = inventoryItems.filter(item => getStockStatus(item.currentStock, item.minimumStock) === 'low').length;
+            const criticalStock = inventoryItems.filter(item => getStockStatus(item.currentStock, item.minimumStock) === 'critical').length;
+
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('lowStockItems').textContent = lowStock + criticalStock;
+        }
+
+        function initializeChart() {
+            const chart = echarts.init(document.getElementById('stockChart'));
+            
+            const categories = ['Screen', 'Battery', 'Camera', 'Motherboard', 'Tools', 'Other'];
+            const stockData = categories.map(category => {
+                const items = inventoryItems.filter(item => {
+                    const catMap = {
+                        'Screen': 'screen',
+                        'Battery': 'battery', 
+                        'Camera': 'camera',
+                        'Motherboard': 'motherboard',
+                        'Tools': 'tools'
+                    };
+                    return item.category === (catMap[category] || 'other');
+                });
+                return items.reduce((sum, item) => sum + item.currentStock, 0);
+            });
+
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: categories,
+                    axisTick: {
+                        alignWithLabel: true
+                    }
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    name: 'Stock',
+                    type: 'bar',
+                    barWidth: '60%',
+                    data: stockData,
+                    itemStyle: {
+                        color: '#3b82f6'
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+            
+            // Make chart responsive
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+
+        function openInventoryModal() {
+            document.getElementById('inventoryModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            // Reset form
+            document.getElementById('inventoryForm').reset();
+            document.getElementById('modalTitle').textContent = 'Tambah Item Baru';
+        }
+
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            
+            // Reset form
+            document.getElementById('inventoryForm').reset();
+            delete document.getElementById('inventoryForm').dataset.itemId;
+        }
+
+        function showItemDetail(item) {
+            const modal = document.getElementById('itemDetailModal');
+            const content = document.getElementById('itemDetailContent');
+            
+            const stockStatus = getStockStatus(item.currentStock, item.minimumStock);
+            const stockStatusText = {
+                'normal': 'Stock Normal',
+                'low': 'Stock Rendah',
+                'critical': 'Stock Habis'
+            };
+            
+            const profit = item.sellingPrice - item.purchasePrice;
+            const profitMargin = ((profit / item.purchasePrice) * 100).toFixed(1);
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Item</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Nama Item</label>
+                                <p class="text-gray-900">${item.name}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Kategori</label>
+                                <p class="text-gray-900 capitalize">${item.category}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Deskripsi</label>
+                                <p class="text-gray-900">${item.description}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Supplier</label>
+                                <p class="text-gray-900">${item.supplier}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Stock</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Stock Saat Ini</label>
+                                <p class="text-2xl font-bold ${item.currentStock === 0 ? 'text-red-600' : item.currentStock <= item.minimumStock ? 'text-yellow-600' : 'text-green-600'}">
+                                    ${item.currentStock} pcs
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Minimum Stock</label>
+                                <p class="text-gray-900">${item.minimumStock} pcs</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Status Stock</label>
+                                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                                    stockStatus === 'normal' ? 'bg-green-100 text-green-800' :
+                                    stockStatus === 'low' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                }">
+                                    ${stockStatusText[stockStatus]}
+                                </span>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-500">Terakhir Diupdate</label>
+                                <p class="text-gray-900">${formatDate(item.lastRestocked)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Harga</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Harga Beli</label>
+                            <p class="text-lg font-semibold text-gray-900">Rp ${formatCurrency(item.purchasePrice)}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Harga Jual</label>
+                            <p class="text-lg font-semibold text-gray-900">Rp ${formatCurrency(item.sellingPrice)}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-500">Profit Margin</label>
+                            <p class="text-lg font-semibold ${profitMargin > 30 ? 'text-green-600' : profitMargin > 20 ? 'text-yellow-600' : 'text-red-600'}">
+                                ${profitMargin}%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex justify-end space-x-4">
+                        <button onclick="adjustStock(${item.id}, 'in')" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Stock In
+                        </button>
+                        <button onclick="adjustStock(${item.id}, 'out')" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            <i class="fas fa-minus mr-2"></i>Stock Out
+                        </button>
+                        <button onclick="editItem(${item.id})" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-edit mr-2"></i>Edit Item
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeItemDetailModal() {
+            document.getElementById('itemDetailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function adjustStock(itemId, type) {
+            const item = inventoryItems.find(i => i.id === itemId);
+            if (!item) return;
+
+            const amount = parseInt(prompt(`Masukkan jumlah stock ${type === 'in' ? 'masuk' : 'keluar'}:`));
+            if (!amount || amount <= 0) return;
+
+            if (type === 'in') {
+                item.currentStock += amount;
+                showNotification(`Stock ${item.name} bertambah ${amount} pcs`);
+            } else {
+                if (item.currentStock < amount) {
+                    showNotification('Stock tidak cukup!', 'error');
+                    return;
+                }
+                item.currentStock -= amount;
+                showNotification(`Stock ${item.name} berkurang ${amount} pcs`);
+            }
+
+            item.lastRestocked = new Date().toISOString().split('T')[0];
+            renderInventory();
+            initializeChart();
+        }
+
+        function editItem(itemId) {
+            const item = inventoryItems.find(i => i.id === itemId);
+            if (!item) return;
+
+            // Populate form with existing data
+            document.getElementById('itemName').value = item.name;
+            document.getElementById('itemCategory').value = item.category;
+            document.getElementById('itemDescription').value = item.description;
+            document.getElementById('currentStock').value = item.currentStock;
+            document.getElementById('minimumStock').value = item.minimumStock;
+            document.getElementById('purchasePrice').value = item.purchasePrice;
+            document.getElementById('sellingPrice').value = item.sellingPrice;
+            document.getElementById('supplier').value = item.supplier;
+
+            // Store item ID for update
+            document.getElementById('inventoryForm').dataset.itemId = itemId;
+            document.getElementById('modalTitle').textContent = 'Edit Item';
+            
+            closeItemDetailModal();
+            openInventoryModal();
+        }
+
+        // Form submission
+        document.getElementById('inventoryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const itemId = this.dataset.itemId;
+            const itemData = {
+                name: document.getElementById('itemName').value,
+                category: document.getElementById('itemCategory').value,
+                description: document.getElementById('itemDescription').value,
+                currentStock: parseInt(document.getElementById('currentStock').value),
+                minimumStock: parseInt(document.getElementById('minimumStock').value),
+                purchasePrice: parseInt(document.getElementById('purchasePrice').value),
+                sellingPrice: parseInt(document.getElementById('sellingPrice').value),
+                supplier: document.getElementById('supplier').value,
+                lastRestocked: new Date().toISOString().split('T')[0]
+            };
+
+            if (itemId) {
+                // Update existing item
+                const itemIndex = inventoryItems.findIndex(i => i.id === parseInt(itemId));
+                if (itemIndex !== -1) {
+                    inventoryItems[itemIndex] = { ...inventoryItems[itemIndex], ...itemData };
+                    showNotification(`Item #${itemId} berhasil diupdate`);
+                }
+            } else {
+                // Add new item
+                const newId = Math.max(...inventoryItems.map(i => i.id)) + 1;
+                inventoryItems.push({ id: newId, ...itemData });
+                showNotification(`Item baru #${newId} berhasil ditambahkan`);
+            }
+
+            renderInventory();
+            initializeChart();
+            closeInventoryModal();
+            
+            // Reset form
+            this.reset();
+            delete this.dataset.itemId;
+        });
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function formatCurrency(amount) {
+            return amount.toLocaleString('id-ID');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function initializeAnimations() {
+            anime({
+                targets: '.fade-in',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 800,
+                delay: anime.stagger(100),
+                easing: 'easeOutQuart'
+            });
+        }
+
+        // Close modals when clicking outside
+        document.getElementById('inventoryModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeInventoryModal();
+            }
+        });
+
+        document.getElementById('itemDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeItemDetailModal();
+            }
+        });
+    </script>
+</body>
+</html>
